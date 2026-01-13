@@ -118,7 +118,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-// DOM
+// DOM elements
 const loginSection = document.getElementById("login");
 const nav = document.getElementById("nav");
 const sections = {home:document.getElementById("home"),seller:document.getElementById("seller"),profile:document.getElementById("profile"),support:document.getElementById("support")};
@@ -144,7 +144,12 @@ const chatList = document.getElementById("chatList");
 const supportMessage = document.getElementById("supportMessage");
 const sendSupport = document.getElementById("sendSupport");
 
-// NAV
+// FIXED: Input elements
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const phoneInput = document.getElementById("phone");
+
+// NAVIGATION
 document.querySelectorAll("#nav button[data-tab]").forEach(button=>{
 button.addEventListener("click",()=>{
 const tab = button.getAttribute("data-tab");
@@ -155,7 +160,7 @@ button.classList.add("active");
 });
 });
 
-// Notifications
+// NOTIFICATIONS
 function showNotification(message,type="info"){
 const container=document.getElementById("notificationContainer");
 const notif=document.createElement("div");
@@ -170,16 +175,16 @@ container.appendChild(notif);
 setTimeout(()=>notif.remove(),5000);
 }
 
-// REGISTER/LOGIN
+// REGISTER / LOGIN
 registerBtn.onclick=async()=>{
-if(!email.value||!password.value||!phone.value){return alert("Fill all fields");}
+if(!emailInput.value||!passwordInput.value||!phoneInput.value){return alert("Fill all fields");}
 try{
-const cred = await auth.createUserWithEmailAndPassword(email.value,password.value);
-await db.collection("users").doc(cred.user.uid).set({phone:phone.value,name:"",role:"user",verified:false,createdAt:Date.now()});
-alert("Registered! Now login."); 
+const cred = await auth.createUserWithEmailAndPassword(emailInput.value,passwordInput.value);
+await db.collection("users").doc(cred.user.uid).set({phone:phoneInput.value,name:"",role:"user",verified:false,createdAt:Date.now()});
+alert("Registered! Now login.");
 }catch(e){alert(e.message);}
 };
-loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
+loginBtn.onclick=()=>auth.signInWithEmailAndPassword(emailInput.value,passwordInput.value).catch(e=>alert(e.message));
 logoutBtn.onclick=()=>auth.signOut();
 
 // AUTH STATE
@@ -200,12 +205,11 @@ for(let s in sections){sections[s].style.display="none";}
 }
 });
 
-// SUBMIT LISTING WITH IMAGE UPLOAD
+// SUBMIT LISTING WITH IMAGE
 submitBtn.onclick=async()=>{
 const user = auth.currentUser;
 if(!user) return alert("Please login first");
 if(!title.value||!price.value||!whatsapp.value||!desc.value) return alert("Fill all fields");
-
 let imageUrl = "";
 if(image.files.length>0){
 const file = image.files[0];
@@ -213,7 +217,6 @@ const storageRef = storage.ref().child('listing_images/'+Date.now()+"_"+file.nam
 await storageRef.put(file);
 imageUrl = await storageRef.getDownloadURL();
 }
-
 try{
 await db.collection("listings").add({
 sellerId:user.uid,
@@ -261,7 +264,6 @@ ${d.featured?'<div class="badge">FEATURED</div>':''}
 <img src="${d.image||'https://via.placeholder.com/300'}">
 <h4>${d.title}</h4>
 <p>${d.price} • ${d.type} • ${d.description}</p>
-<p>Seller: ${d.sellerName||"Anonymous"} ${d.sellerVerified?'✅':'❌'}</p>
 <a href="https://wa.me/${d.whatsapp}" target="_blank">WhatsApp Seller</a>
 </div>`;
 }
@@ -342,6 +344,5 @@ time:Date.now()
 supportMessage.value="";
 };
 </script>
-
 </body>
 </html>
