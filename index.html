@@ -10,7 +10,7 @@
   --orange:#ff8c00;
   --dark:#0f2a44;
 }
-body{margin:0;font-family:Arial;background:#f4f4f4}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f4f4}
 header{background:var(--dark);color:#fff;padding:15px;text-align:center;font-size:22px}
 nav{display:none;gap:5px;background:var(--orange);padding:8px;display:flex;}
 nav button{flex:1;border:none;padding:10px;color:#fff;border-radius:6px;font-size:15px;cursor:pointer;}
@@ -22,7 +22,7 @@ button{background:var(--green);color:#fff;font-weight:bold;cursor:pointer}
 .price{font-size:20px;color:var(--orange);font-weight:bold;margin-top:4px}
 .badge{display:inline-block;background:var(--orange);color:#000;padding:3px 6px;border-radius:4px;font-size:12px;margin-left:4px}
 .verified{background:var(--green);color:#fff}
-img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px}
+img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#eee}
 .whatsapp{display:block;text-align:center;background:#25d366;color:#fff;padding:10px;border-radius:8px;margin-top:8px;text-decoration:none;font-weight:bold}
 .refresh{background:#6c757d;margin-bottom:10px}
 .searchBox{padding:6px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px}
@@ -101,6 +101,7 @@ function show(id){
 // Login/Register
 document.getElementById("loginBtn").onclick=()=> auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
 document.getElementById("registerBtn").onclick=async()=>{
+  if(!email.value || !password.value){ alert("Enter email & password"); return; }
   const c=await auth.createUserWithEmailAndPassword(email.value,password.value);
   await db.collection("users").doc(c.user.uid).set({verified:false,name:"",createdAt:Date.now()});
   alert("Registered! Now login.");
@@ -127,15 +128,16 @@ document.querySelectorAll("nav button[data-tab]").forEach(b=>{b.onclick=()=>show
 
 // Load Listings (Home)
 async function loadListings(){
-  const snap=await db.collection("listings").where("status","==","approved").get();
+  const snap=await db.collection("listings").where("status","==","approved").orderBy("createdAt","desc").get();
   const searchTerm=document.getElementById("searchInput").value.toLowerCase();
   listings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
     if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
+    const imgUrl = d.image && d.image.trim()!="" ? d.image : 'https://via.placeholder.com/300';
     listings.innerHTML+=`
     <div class="card">
-      <img src="${d.image||'https://via.placeholder.com/300'}">
+      <img src="${imgUrl}" alt="Listing Image">
       <h4>${d.title} ${d.featured?'<span class="badge">SPONSORED</span>':''}</h4>
       <div class="price">${d.price}</div>
       <div>${d.sellerVerified?'<span class="badge verified">VERIFIED SELLER</span>':''}</div>
@@ -150,12 +152,13 @@ document.getElementById("searchInput").addEventListener("input", loadListings);
 // Submit Listing (Sell)
 document.getElementById("submit").onclick=async()=>{
   const u=auth.currentUser;
-  if(!u)return;
+  if(!u){ alert("Login first!"); return; }
   const userDoc=await db.collection("users").doc(u.uid).get();
+  const imgUrl = image.value.trim()!=="" ? image.value.trim() : 'https://via.placeholder.com/300';
   await db.collection("listings").add({
     title:title.value,
     price:price.value,
-    image:image.value,
+    image:imgUrl,
     whatsapp:whatsapp.value,
     desc:desc.value,
     sellerId:u.uid,
@@ -173,12 +176,14 @@ document.getElementById("submit").onclick=async()=>{
 async function loadMyListings(){
   const u=auth.currentUser;
   if(!u)return;
-  const snap=await db.collection("listings").where("sellerId","==",u.uid).get();
+  const snap=await db.collection("listings").where("sellerId","==",u.uid).orderBy("createdAt","desc").get();
   myListings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
+    const imgUrl = d.image && d.image.trim()!="" ? d.image : 'https://via.placeholder.com/300';
     myListings.innerHTML+=`
     <div class="card">
+      <img src="${imgUrl}" alt="Listing Image">
       ${d.status==="pending"?"🔒 Pending":"✅ Approved"} ${d.featured?'<span class="badge">SPONSORED</span>':''}
       <h4>${d.title}</h4>
       <div class="price">${d.price}</div>
