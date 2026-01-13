@@ -126,28 +126,41 @@ auth.onAuthStateChanged(u=>{
 
 document.querySelectorAll("nav button[data-tab]").forEach(b=>{b.onclick=()=>show(b.dataset.tab)});
 
-// Load Listings (Home)
+// Load Listings (Home) with Seller Verification
 async function loadListings(){
   const snap=await db.collection("listings").orderBy("createdAt","desc").get();
   const searchTerm=document.getElementById("searchInput").value.toLowerCase();
   listings.innerHTML="";
-  snap.forEach(doc=>{
-    const d=doc.data();
-    // Show only approved listings
-    if(d.status!=="approved") return;
-    // Search filter
-    if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
+  
+  for(const doc of snap.docs){
+    const d = doc.data();
+    if(d.status!=="approved") continue;
+    if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) continue;
+
+    let sellerName="Unknown Seller";
+    let sellerVerified=false;
+
+    if(d.sellerId){
+      const sellerDoc = await db.collection("users").doc(d.sellerId).get();
+      if(sellerDoc.exists){
+        sellerName = sellerDoc.data().name || sellerName;
+        sellerVerified = sellerDoc.data().verified || false;
+      }
+    }
+
     const imgUrl = d.image && d.image.trim()!=="" ? d.image : 'https://via.placeholder.com/300';
+
     listings.innerHTML+=`
     <div class="card">
-      <img src="${imgUrl}" alt="Listing Image">
+      <img src="${imgUrl}" alt="Listing Image" onerror="this.src='https://via.placeholder.com/300'">
       <h4>${d.title} ${d.featured?'<span class="badge">SPONSORED</span>':''}</h4>
       <div class="price">${d.price}</div>
-      <div>${d.sellerVerified?'<span class="badge verified">VERIFIED SELLER</span>':''}</div>
+      <div>${sellerVerified?'<span class="badge verified">VERIFIED SELLER</span>':''}</div>
+      <div>Seller: ${sellerName}</div>
       <p>${d.desc}</p>
       ${d.whatsapp?`<a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">💬 WhatsApp Seller</a>`:""}
     </div>`;
-  });
+  }
 }
 
 document.getElementById("searchInput").addEventListener("input", loadListings);
@@ -156,7 +169,6 @@ document.getElementById("searchInput").addEventListener("input", loadListings);
 document.getElementById("submit").onclick=async()=>{
   const u=auth.currentUser;
   if(!u){ alert("Login first!"); return; }
-  const userDoc=await db.collection("users").doc(u.uid).get();
   const imgUrl = image.value.trim()!=="" ? image.value.trim() : 'https://via.placeholder.com/300';
   await db.collection("listings").add({
     title:title.value || "No title",
@@ -167,7 +179,6 @@ document.getElementById("submit").onclick=async()=>{
     sellerId:u.uid,
     status:"pending",
     featured:false,
-    sellerVerified:userDoc.data().verified||false,
     createdAt:Date.now()
   });
   alert("Submitted for approval");
@@ -186,7 +197,7 @@ async function loadMyListings(){
     const imgUrl = d.image && d.image.trim()!=="" ? d.image : 'https://via.placeholder.com/300';
     myListings.innerHTML+=`
     <div class="card">
-      <img src="${imgUrl}" alt="Listing Image">
+      <img src="${imgUrl}" alt="Listing Image" onerror="this.src='https://via.placeholder.com/300'">
       ${d.status==="pending"?"🔒 Pending":"✅ Approved"} ${d.featured?'<span class="badge">SPONSORED</span>':''}
       <h4>${d.title}</h4>
       <div class="price">${d.price}</div>
@@ -214,6 +225,5 @@ async function saveProfile(){
   alert("Profile updated!");
 }
 </script>
-
 </body>
 </html>
