@@ -3,19 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZedMarket 🇿🇲 - User Portal</title>
+<title>ZedMarket 🇿🇲 - User</title>
 <style>
-body{font-family:Arial,sans-serif;margin:0;background:#f5f5f5}
+body{font-family:Arial,sans-serif;margin:0;background:#f2f2f2}
 header{background:#0f2a44;color:#fff;padding:15px;text-align:center;font-size:22px}
-nav{display:flex;background:#198754}
+nav{display:flex;justify-content:center;background:#198754}
 nav button{flex:1;padding:10px;color:#fff;border:none;cursor:pointer;font-size:16px}
 nav button.active{background:#0f2a44}
 section{display:none;padding:15px}
 section.active{display:block}
-input,textarea,select,button{width:100%;padding:10px;margin:6px 0;border-radius:5px;border:1px solid #ccc}
+input,select,textarea,button{width:100%;padding:10px;margin:6px 0;border-radius:5px;border:1px solid #ccc}
 button{background:#198754;color:#fff;cursor:pointer}
-.card{background:#fff;padding:10px;margin:10px 0;border-radius:6px;position:relative;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
-.card img{width:100%;height:180px;object-fit:cover;border-radius:5px;}
+.card{background:#fff;padding:10px;margin:10px 0;border-radius:6px;position:relative;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+.card img{width:100%;height:180px;object-fit:cover;border-radius:5px}
+.card .badge{position:absolute;top:10px;right:10px;background:#ffc107;color:#000;padding:4px 8px;border-radius:3px;font-weight:bold}
+.chatBox{height:150px;overflow:auto;background:#fafafa;padding:8px;margin-bottom:5px;border-radius:5px;border:1px solid #ccc}
 </style>
 </head>
 <body>
@@ -37,12 +39,19 @@ button{background:#198754;color:#fff;cursor:pointer}
 <button class="active" data-tab="home">Home</button>
 <button data-tab="seller">Seller</button>
 <button data-tab="profile">Profile</button>
+<button data-tab="chat">Support</button>
 <button id="logoutBtn">Logout</button>
 </nav>
 
 <!-- HOME -->
 <section id="home">
-<h3>Approved Listings</h3>
+<h3>Search & Filter</h3>
+<input type="text" id="search" placeholder="Search by title...">
+<select id="filterType">
+  <option value="">All Types</option>
+  <option value="product">Product</option>
+  <option value="service">Service</option>
+</select>
 <div id="listings"></div>
 </section>
 
@@ -50,13 +59,12 @@ button{background:#198754;color:#fff;cursor:pointer}
 <section id="seller">
 <h3>Post a Listing</h3>
 <select id="type">
-<option value="product">Product</option>
-<option value="service">Service</option>
+  <option value="product">Product</option>
+  <option value="service">Service</option>
 </select>
 <input id="title" placeholder="Title">
 <input id="price" placeholder="Price or Call">
-<input id="image" type="file" accept="image/*">
-<input id="whatsapp" placeholder="WhatsApp 260...">
+<input type="file" id="image">
 <textarea id="desc" placeholder="Description"></textarea>
 <button id="submitBtn">Submit Listing</button>
 
@@ -73,15 +81,21 @@ button{background:#198754;color:#fff;cursor:pointer}
 <button id="saveProfileBtn">Save Profile</button>
 </section>
 
-<!-- FIREBASE -->
+<!-- SUPPORT -->
+<section id="chat">
+<h3>Support Chat</h3>
+<div id="chatBox" class="chatBox"></div>
+<input id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()">
+</section>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <script>
-window.addEventListener('load', ()=>{
-  // Firebase config
+window.addEventListener('load',()=>{
   const firebaseConfig = {
     apiKey: "AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
     authDomain: "pa-mwera.firebaseapp.com",
@@ -91,47 +105,44 @@ window.addEventListener('load', ()=>{
     appId: "1:959795010421:web:84e1cc1517a5d98598113c"
   };
   firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  const storage = firebase.storage();
+  const auth=firebase.auth();
+  const db=firebase.firestore();
+  const storage=firebase.storage();
 
-  // DOM
-  const loginSection = document.getElementById("login");
-  const nav = document.getElementById("nav");
-  const sections = {
-    home: document.getElementById("home"),
-    seller: document.getElementById("seller"),
-    profile: document.getElementById("profile")
-  };
+  const loginSection=document.getElementById("login");
+  const nav=document.getElementById("nav");
+  const sections={home:document.getElementById("home"),seller:document.getElementById("seller"),profile:document.getElementById("profile"),chat:document.getElementById("chat")};
 
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
-  const phoneInput = document.getElementById("phone");
-  const registerBtn = document.getElementById("registerBtn");
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
+  const registerBtn=document.getElementById("registerBtn");
+  const loginBtn=document.getElementById("loginBtn");
+  const logoutBtn=document.getElementById("logoutBtn");
 
-  const submitBtn = document.getElementById("submitBtn");
-  const title = document.getElementById("title");
-  const price = document.getElementById("price");
-  const image = document.getElementById("image");
-  const whatsapp = document.getElementById("whatsapp");
-  const desc = document.getElementById("desc");
-  const type = document.getElementById("type");
+  const submitBtn=document.getElementById("submitBtn");
+  const title=document.getElementById("title");
+  const price=document.getElementById("price");
+  const type=document.getElementById("type");
+  const desc=document.getElementById("desc");
+  const fileInput=document.getElementById("image");
 
-  const listings = document.getElementById("listings");
-  const myListings = document.getElementById("myListings");
+  const listings=document.getElementById("listings");
+  const myListings=document.getElementById("myListings");
 
-  const profileName = document.getElementById("profileName");
-  const profilePhone = document.getElementById("profilePhone");
-  const profileLocation = document.getElementById("profileLocation");
-  const saveProfileBtn = document.getElementById("saveProfileBtn");
+  const profileName=document.getElementById("profileName");
+  const profilePhone=document.getElementById("profilePhone");
+  const profileLocation=document.getElementById("profileLocation");
+  const saveProfileBtn=document.getElementById("saveProfileBtn");
 
-  // NAV
+  const search=document.getElementById("search");
+  const filterType=document.getElementById("filterType");
+
+  const chatBox=document.getElementById("chatBox");
+  const chatInput=document.getElementById("chatInput");
+
+  // NAVIGATION
   document.querySelectorAll("#nav button[data-tab]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const tab = btn.getAttribute("data-tab");
-      for(let s in sections) sections[s].style.display="none";
+    btn.addEventListener("click",()=>{
+      const tab=btn.getAttribute("data-tab");
+      for(let s in sections){sections[s].style.display="none";}
       sections[tab].style.display="block";
       document.querySelectorAll("#nav button").forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
@@ -139,24 +150,18 @@ window.addEventListener('load', ()=>{
   });
 
   // REGISTER
-  registerBtn.onclick = async ()=>{
-    if(!emailInput.value||!passwordInput.value||!phoneInput.value){return alert("Fill all fields");}
+  registerBtn.onclick=async()=>{
+    if(!email.value||!password.value||!phone.value) return alert("Fill all fields");
     try{
-      const cred = await auth.createUserWithEmailAndPassword(emailInput.value,passwordInput.value);
-      await db.collection("users").doc(cred.user.uid).set({
-        name:"",
-        phone:phoneInput.value,
-        role:"user",
-        verified:false,
-        createdAt:Date.now()
-      });
-      alert("Registered! Now login.");
+      const cred=await auth.createUserWithEmailAndPassword(email.value,password.value);
+      await db.collection("users").doc(cred.user.uid).set({phone:phone.value,name:"",role:"buyer",verified:false,createdAt:Date.now()});
+      alert("Registered! Now log in.");
     }catch(e){alert(e.message);}
   };
 
   // LOGIN
-  loginBtn.onclick = ()=>auth.signInWithEmailAndPassword(emailInput.value,passwordInput.value).catch(e=>alert(e.message));
-  logoutBtn.onclick = ()=>auth.signOut();
+  loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
+  logoutBtn.onclick=()=>auth.signOut();
 
   // AUTH STATE
   auth.onAuthStateChanged(user=>{
@@ -167,120 +172,133 @@ window.addEventListener('load', ()=>{
       loadListings();
       loadMyListings();
       loadProfile();
+      loadChat();
     }else{
       loginSection.style.display="block";
       nav.style.display="none";
-      for(let s in sections) sections[s].style.display="none";
+      for(let s in sections){sections[s].style.display="none";}
     }
   });
 
   // SUBMIT LISTING
-  submitBtn.onclick = async ()=>{
-    const user = auth.currentUser;
-    if(!user) return alert("Please login first");
-    if(!title.value||!price.value||!whatsapp.value||!desc.value) return alert("Fill all fields");
-    let imageUrl = "";
-    if(image.files.length>0){
-      const file = image.files[0];
-      const storageRef = storage.ref().child('listing_images/'+Date.now()+"_"+file.name);
-      await storageRef.put(file);
-      imageUrl = await storageRef.getDownloadURL();
+  submitBtn.onclick=async()=>{
+    const user=auth.currentUser;
+    if(!user) return alert("Login first");
+    if(!title.value||!price.value||!desc.value) return alert("Fill all fields");
+
+    let imageUrl="";
+    if(fileInput.files[0]){
+      const file=fileInput.files[0];
+      const ref=storage.ref().child(`listings/${user.uid}/${Date.now()}_${file.name}`);
+      await ref.put(file);
+      imageUrl=await ref.getDownloadURL();
     }
+
+    const userDoc=await db.collection("users").doc(user.uid).get();
+    const sellerData=userDoc.data();
+
     await db.collection("listings").add({
       sellerId:user.uid,
+      sellerName:sellerData.name||"No name",
+      sellerVerified:sellerData.verified||false,
       type:type.value,
       title:title.value,
       price:price.value,
       image:imageUrl,
-      whatsapp:whatsapp.value,
       description:desc.value,
       status:"pending",
       featured:false,
       createdAt:Date.now()
     });
     alert("Listing submitted!");
-    title.value=""; price.value=""; whatsapp.value=""; desc.value=""; image.value="";
-    loadMyListings();
+    title.value=""; price.value=""; desc.value=""; fileInput.value="";
+    loadMyListings(); loadListings();
   };
 
   // LOAD LISTINGS
   async function loadListings(){
-    const snap = await db.collection("listings").where("status","==","approved").orderBy("createdAt","desc").get();
+    const snap=await db.collection("listings").where("status","==","approved").get();
     listings.innerHTML="";
     snap.forEach(doc=>{
       const d=doc.data();
-      listings.innerHTML+=`<div class="card">
-        ${d.featured?'<div class="badge">FEATURED</div>':''}
-        <img src="${d.image||'https://via.placeholder.com/300'}">
-        <h4>${d.title}</h4>
-        <p>${d.price} • ${d.type} • ${d.description}</p>
-        <a href="https://wa.me/${d.whatsapp}" target="_blank">WhatsApp Seller</a>
-      </div>`;
+      if(d.title.toLowerCase().includes(search.value.toLowerCase())){
+        listings.innerHTML+=`<div class="card">
+          ${d.featured?'<span class="badge">FEATURED</span>':''}
+          ${d.sellerVerified?'<span class="badge">VERIFIED SELLER</span>':''}
+          <img src="${d.image||'https://via.placeholder.com/300'}">
+          <h4>${d.title}</h4>
+          <p>${d.price} • ${d.type}</p>
+          <p>Seller: ${d.sellerName}</p>
+        </div>`;
+      }
     });
   }
+  search.addEventListener("input",loadListings);
+  filterType.addEventListener("change",loadListings);
 
-  // LOAD MY LISTINGS
+  // MY LISTINGS
   async function loadMyListings(){
-    const user = auth.currentUser;
+    const user=auth.currentUser;
     if(!user) return;
-    const snap = await db.collection("listings").where("sellerId","==",user.uid).orderBy("createdAt","desc").get();
+    const snap=await db.collection("listings").where("sellerId","==",user.uid).get();
     myListings.innerHTML="";
     snap.forEach(doc=>{
       const d=doc.data();
       myListings.innerHTML+=`<div class="card">
         ${d.status==="pending"?'🔒 Pending':'✅ Approved'}
         <h4>${d.title}</h4>
-        <button onclick="editListing('${doc.id}','${d.title}','${d.price}','${d.image}','${d.whatsapp}','${d.description}')">Edit</button>
+        <button onclick="editListing('${doc.id}','${d.title}','${d.price}','${d.description}')">Edit</button>
         <button onclick="deleteListing('${doc.id}')">Delete</button>
       </div>`;
     });
   }
-
-  window.editListing = async(id,t,p,img,wa,descVal)=>{
-    title.value=t; price.value=p; whatsapp.value=wa; desc.value=descVal;
+  window.editListing=async(id,t,p,descVal)=>{
+    title.value=t; price.value=p; desc.value=descVal;
     if(confirm("Save changes?")){
-      await db.collection("listings").doc(id).update({
-        title:title.value,
-        price:price.value,
-        image:img,
-        whatsapp:whatsapp.value,
-        description:desc.value,
-        status:"pending"
-      });
-      alert("Listing updated!");
+      await db.collection("listings").doc(id).update({title:title.value,price:price.value,description:desc.value,status:"pending"});
       loadMyListings(); loadListings();
     }
   };
-  window.deleteListing = async(id)=>{
-    if(confirm("Are you sure?")){
-      await db.collection("listings").doc(id).delete();
-      loadMyListings(); loadListings();
-    }
+  window.deleteListing=async(id)=>{
+    if(confirm("Delete listing?")){await db.collection("listings").doc(id).delete(); loadMyListings(); loadListings();}
   };
 
   // PROFILE
   async function loadProfile(){
-    const user = auth.currentUser;
-    if(!user) return;
-    const docSnap = await db.collection("users").doc(user.uid).get();
-    if(docSnap.exists){
-      const d=docSnap.data();
+    const user=auth.currentUser; if(!user) return;
+    const doc=await db.collection("users").doc(user.uid).get();
+    if(doc.exists){
+      const d=doc.data();
       profileName.value=d.name||"";
       profilePhone.value=d.phone||"";
       profileLocation.value=d.location||"";
     }
   }
-  saveProfileBtn.onclick = async()=>{
-    const user = auth.currentUser;
-    if(!user) return alert("Please login first");
-    await db.collection("users").doc(user.uid).update({
-      name:profileName.value,
-      phone:profilePhone.value,
-      location:profileLocation.value
-    });
+  saveProfileBtn.onclick=async()=>{
+    const user=auth.currentUser; if(!user) return alert("Login first");
+    await db.collection("users").doc(user.uid).update({name:profileName.value,phone:profilePhone.value,location:profileLocation.value});
     alert("Profile updated!");
   };
 
+  // SUPPORT CHAT
+  async function loadChat(){
+    const user=auth.currentUser; if(!user) return;
+    db.collection("messages").doc(user.uid).collection("messages").orderBy("time").onSnapshot(snap=>{
+      chatBox.innerHTML="";
+      snap.forEach(m=>{
+        const d=m.data();
+        chatBox.innerHTML+=`<div><b>${d.from==="admin"?"Admin":"You"}:</b> ${d.text}</div>`;
+      });
+      chatBox.scrollTop=chatBox.scrollHeight;
+    });
+  }
+  window.sendMessage=async()=>{
+    const user=auth.currentUser; if(!user) return;
+    if(!chatInput.value) return;
+    const ref=db.collection("messages").doc(user.uid).collection("messages");
+    await ref.add({from:"user",text:chatInput.value,time:Date.now()});
+    chatInput.value="";
+  };
 });
 </script>
 </body>
