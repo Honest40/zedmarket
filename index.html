@@ -12,8 +12,8 @@
 }
 body{margin:0;font-family:Arial,sans-serif;background:#f4f4f4}
 header{background:var(--dark);color:#fff;padding:15px;text-align:center;font-size:22px}
-nav{display:none;gap:5px;background:var(--orange);padding:8px;display:flex;}
-nav button{flex:1;border:none;padding:10px;color:#fff;border-radius:6px;font-size:15px;cursor:pointer;}
+nav{display:none;gap:5px;background:var(--orange);padding:8px;display:flex;flex-wrap:wrap;}
+nav button{flex:1;border:none;padding:10px;color:#fff;border-radius:6px;font-size:15px;cursor:pointer;margin:2px;}
 nav button.active{background:var(--green)}
 section{display:none;padding:15px}
 input,textarea,select,button{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
@@ -26,6 +26,9 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
 .whatsapp{display:block;text-align:center;background:#25d366;color:#fff;padding:10px;border-radius:8px;margin-top:8px;text-decoration:none;font-weight:bold}
 .refresh{background:#6c757d;margin-bottom:10px}
 .searchBox{padding:6px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px}
+.sortBox{padding:6px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px}
+.editBtn{background:#ffc107;color:#000;margin-top:5px;}
+.pendingBadge{background:#6c757d;color:#fff;}
 </style>
 </head>
 
@@ -50,6 +53,11 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
 
 <section id="home">
   <input class="searchBox" id="searchInput" placeholder="Search listings...">
+  <select class="sortBox" id="sortListings">
+    <option value="newest">Newest First</option>
+    <option value="priceLow">Price Low → High</option>
+    <option value="priceHigh">Price High → Low</option>
+  </select>
   <button class="refresh" onclick="loadListings()">🔄 Refresh</button>
   <div id="listings"></div>
 </section>
@@ -90,6 +98,7 @@ const authBox=document.getElementById("auth");
 const nav=document.getElementById("nav");
 const sections=document.querySelectorAll("section");
 
+// Show section
 function show(id){
   sections.forEach(s=>s.style.display="none");
   document.getElementById(id).style.display="block";
@@ -126,20 +135,31 @@ auth.onAuthStateChanged(u=>{
 
 document.querySelectorAll("nav button[data-tab]").forEach(b=>{b.onclick=()=>show(b.dataset.tab)});
 
-// Load Listings (Home) with Seller Verification
+// Load Listings (Home) with Verification and Sorting
 async function loadListings(){
-  const snap=await db.collection("listings").orderBy("createdAt","desc").get();
+  const snap=await db.collection("listings").get();
   const searchTerm=document.getElementById("searchInput").value.toLowerCase();
-  listings.innerHTML="";
-  
-  for(const doc of snap.docs){
-    const d = doc.data();
-    if(d.status!=="approved") continue;
-    if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) continue;
+  const sortValue=document.getElementById("sortListings").value;
+  let listingsArr = [];
 
+  snap.forEach(doc=>{
+    const d = doc.data();
+    if(d.status!=="approved") return;
+    if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
+    listingsArr.push({id:doc.id,...d});
+  });
+
+  // Sorting
+  listingsArr.sort((a,b)=>{
+    if(sortValue==="newest") return b.createdAt - a.createdAt;
+    if(sortValue==="priceLow") return parseFloat(a.price) - parseFloat(b.price);
+    if(sortValue==="priceHigh") return parseFloat(b.price) - parseFloat(a.price);
+  });
+
+  listings.innerHTML="";
+  for(const d of listingsArr){
     let sellerName="Unknown Seller";
     let sellerVerified=false;
-
     if(d.sellerId){
       const sellerDoc = await db.collection("users").doc(d.sellerId).get();
       if(sellerDoc.exists){
@@ -147,9 +167,7 @@ async function loadListings(){
         sellerVerified = sellerDoc.data().verified || false;
       }
     }
-
     const imgUrl = d.image && d.image.trim()!=="" ? d.image : 'https://via.placeholder.com/300';
-
     listings.innerHTML+=`
     <div class="card">
       <img src="${imgUrl}" alt="Listing Image" onerror="this.src='https://via.placeholder.com/300'">
@@ -164,6 +182,7 @@ async function loadListings(){
 }
 
 document.getElementById("searchInput").addEventListener("input", loadListings);
+document.getElementById("sortListings").addEventListener("change", loadListings);
 
 // Submit Listing (Sell)
 document.getElementById("submit").onclick=async()=>{
@@ -190,7 +209,7 @@ document.getElementById("submit").onclick=async()=>{
 async function loadMyListings(){
   const u=auth.currentUser;
   if(!u)return;
-  const snap=await db.collection("listings").where("sellerId","==",u.uid).orderBy("createdAt","desc").get();
+  const snap=await db.collection("listings").where("sellerId","==",u.uid).get();
   myListings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
@@ -198,16 +217,28 @@ async function loadMyListings(){
     myListings.innerHTML+=`
     <div class="card">
       <img src="${imgUrl}" alt="Listing Image" onerror="this.src='https://via.placeholder.com/300'">
-      ${d.status==="pending"?"🔒 Pending":"✅ Approved"} ${d.featured?'<span class="badge">SPONSORED</span>':''}
+      <div>${d.status==="pending"?'<span class="badge pendingBadge">🔒 Pending</span>':'✅ Approved'} ${d.featured?'<span class="badge">SPONSORED</span>':''}</div>
       <h4>${d.title}</h4>
       <div class="price">${d.price}</div>
+      <button class="editBtn" onclick="editListing('${doc.id}')">Edit</button>
       <button onclick="deleteListing('${doc.id}')">Delete</button>
     </div>`;
   });
 }
 
+// Delete Listing
 async function deleteListing(id){
   if(confirm("Delete listing?")){await db.collection("listings").doc(id).delete(); loadMyListings();}
+}
+
+// Edit Listing
+async function editListing(id){
+  const doc = await db.collection("listings").doc(id).get();
+  if(!doc.exists) return;
+  const data = doc.data();
+  const newTitle = prompt("Edit Title:", data.title);
+  if(newTitle!==null) await db.collection("listings").doc(id).update({title:newTitle});
+  loadMyListings();
 }
 
 // Profile
