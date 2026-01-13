@@ -128,13 +128,16 @@ document.querySelectorAll("nav button[data-tab]").forEach(b=>{b.onclick=()=>show
 
 // Load Listings (Home)
 async function loadListings(){
-  const snap=await db.collection("listings").where("status","==","approved").orderBy("createdAt","desc").get();
+  const snap=await db.collection("listings").orderBy("createdAt","desc").get();
   const searchTerm=document.getElementById("searchInput").value.toLowerCase();
   listings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
+    // Show only approved listings
+    if(d.status!=="approved") return;
+    // Search filter
     if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
-    const imgUrl = d.image && d.image.trim()!="" ? d.image : 'https://via.placeholder.com/300';
+    const imgUrl = d.image && d.image.trim()!=="" ? d.image : 'https://via.placeholder.com/300';
     listings.innerHTML+=`
     <div class="card">
       <img src="${imgUrl}" alt="Listing Image">
@@ -156,11 +159,11 @@ document.getElementById("submit").onclick=async()=>{
   const userDoc=await db.collection("users").doc(u.uid).get();
   const imgUrl = image.value.trim()!=="" ? image.value.trim() : 'https://via.placeholder.com/300';
   await db.collection("listings").add({
-    title:title.value,
-    price:price.value,
+    title:title.value || "No title",
+    price:price.value || "0",
     image:imgUrl,
-    whatsapp:whatsapp.value,
-    desc:desc.value,
+    whatsapp:whatsapp.value || "",
+    desc:desc.value || "",
     sellerId:u.uid,
     status:"pending",
     featured:false,
@@ -172,7 +175,7 @@ document.getElementById("submit").onclick=async()=>{
   loadMyListings();
 };
 
-// Load My Pending Listings (Sell)
+// Load My Listings (Sell)
 async function loadMyListings(){
   const u=auth.currentUser;
   if(!u)return;
@@ -180,7 +183,7 @@ async function loadMyListings(){
   myListings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
-    const imgUrl = d.image && d.image.trim()!="" ? d.image : 'https://via.placeholder.com/300';
+    const imgUrl = d.image && d.image.trim()!=="" ? d.image : 'https://via.placeholder.com/300';
     myListings.innerHTML+=`
     <div class="card">
       <img src="${imgUrl}" alt="Listing Image">
