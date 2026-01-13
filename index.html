@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZedMarket 🇿🇲 - User</title>
+<title>ZedMarket Seller 🇿🇲</title>
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f2f2f2}
 header{background:#0f2a44;color:#fff;padding:15px;text-align:center;font-size:22px}
@@ -14,10 +14,12 @@ section{display:none;padding:15px}
 section.active{display:block}
 input,select,textarea,button{width:100%;padding:10px;margin:6px 0;border-radius:5px;border:1px solid #ccc}
 button{background:#198754;color:#fff;cursor:pointer}
-.card{background:#fff;padding:10px;margin:10px 0;border-radius:6px;position:relative;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
-.card img{width:100%;height:180px;object-fit:cover;border-radius:5px}
-.card .badge{position:absolute;top:10px;right:10px;background:#ffc107;color:#000;padding:4px 8px;border-radius:3px;font-weight:bold}
-.chatBox{height:150px;overflow:auto;background:#fafafa;padding:8px;margin-bottom:5px;border-radius:5px;border:1px solid #ccc}
+.card{background:#fff;padding:10px;margin:10px 0;border-radius:6px;position:relative}
+.card img{width:100%;height:300px;object-fit:cover;border-radius:5px} /* portrait */
+.card .featured{position:absolute;top:10px;right:10px;background:#ffc107;color:#000;padding:4px 8px;border-radius:3px;font-weight:bold}
+.card .verified{position:absolute;top:10px;left:10px;background:#0d6efd;color:#fff;padding:4px 8px;border-radius:3px;font-weight:bold}
+#search{margin-bottom:10px}
+.chatBox{height:200px;overflow:auto;background:#fafafa;padding:8px;margin-bottom:5px;border-radius:5px;border:1px solid #ccc}
 </style>
 </head>
 <body>
@@ -39,7 +41,7 @@ button{background:#198754;color:#fff;cursor:pointer}
 <button class="active" data-tab="home">Home</button>
 <button data-tab="seller">Seller</button>
 <button data-tab="profile">Profile</button>
-<button data-tab="chat">Support</button>
+<button data-tab="support">Support</button>
 <button id="logoutBtn">Logout</button>
 </nav>
 
@@ -64,7 +66,8 @@ button{background:#198754;color:#fff;cursor:pointer}
 </select>
 <input id="title" placeholder="Title">
 <input id="price" placeholder="Price or Call">
-<input type="file" id="image">
+<input id="image" placeholder="Image URL (portrait preferred)">
+<input id="whatsapp" placeholder="WhatsApp 260...">
 <textarea id="desc" placeholder="Description"></textarea>
 <button id="submitBtn">Submit Listing</button>
 
@@ -82,224 +85,260 @@ button{background:#198754;color:#fff;cursor:pointer}
 </section>
 
 <!-- SUPPORT -->
-<section id="chat">
+<section id="support">
 <h3>Support Chat</h3>
-<div id="chatBox" class="chatBox"></div>
-<input id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()">
+<div id="chatList"></div>
 </section>
 
-<!-- Firebase -->
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <script>
-window.addEventListener('load',()=>{
-  const firebaseConfig = {
-    apiKey: "AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
-    authDomain: "pa-mwera.firebaseapp.com",
-    projectId: "pa-mwera",
-    storageBucket: "pa-mwera.firebasestorage.app",
-    messagingSenderId: "959795010421",
-    appId: "1:959795010421:web:84e1cc1517a5d98598113c"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth=firebase.auth();
-  const db=firebase.firestore();
-  const storage=firebase.storage();
+const firebaseConfig = {
+  apiKey: "AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
+  authDomain: "pa-mwera.firebaseapp.com",
+  projectId: "pa-mwera",
+  storageBucket: "pa-mwera.firebasestorage.app",
+  messagingSenderId: "959795010421",
+  appId: "1:959795010421:web:84e1cc1517a5d98598113c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  const loginSection=document.getElementById("login");
-  const nav=document.getElementById("nav");
-  const sections={home:document.getElementById("home"),seller:document.getElementById("seller"),profile:document.getElementById("profile"),chat:document.getElementById("chat")};
+// DOM elements
+const loginSection = document.getElementById("login");
+const nav = document.getElementById("nav");
+const sections = {
+  home: document.getElementById("home"),
+  seller: document.getElementById("seller"),
+  profile: document.getElementById("profile"),
+  support: document.getElementById("support")
+};
 
-  const registerBtn=document.getElementById("registerBtn");
-  const loginBtn=document.getElementById("loginBtn");
-  const logoutBtn=document.getElementById("logoutBtn");
+const submitBtn = document.getElementById("submitBtn");
+const title = document.getElementById("title");
+const price = document.getElementById("price");
+const image = document.getElementById("image");
+const whatsapp = document.getElementById("whatsapp");
+const desc = document.getElementById("desc");
+const type = document.getElementById("type");
 
-  const submitBtn=document.getElementById("submitBtn");
-  const title=document.getElementById("title");
-  const price=document.getElementById("price");
-  const type=document.getElementById("type");
-  const desc=document.getElementById("desc");
-  const fileInput=document.getElementById("image");
+const search = document.getElementById("search");
+const filterType = document.getElementById("filterType");
+const listings = document.getElementById("listings");
+const myListings = document.getElementById("myListings");
 
-  const listings=document.getElementById("listings");
-  const myListings=document.getElementById("myListings");
+const registerBtn = document.getElementById("registerBtn");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
-  const profileName=document.getElementById("profileName");
-  const profilePhone=document.getElementById("profilePhone");
-  const profileLocation=document.getElementById("profileLocation");
-  const saveProfileBtn=document.getElementById("saveProfileBtn");
+const profileName = document.getElementById("profileName");
+const profilePhone = document.getElementById("profilePhone");
+const profileLocation = document.getElementById("profileLocation");
+const saveProfileBtn = document.getElementById("saveProfileBtn");
 
-  const search=document.getElementById("search");
-  const filterType=document.getElementById("filterType");
+const chatList = document.getElementById("chatList");
 
-  const chatBox=document.getElementById("chatBox");
-  const chatInput=document.getElementById("chatInput");
+// NAVIGATION
+document.querySelectorAll("#nav button[data-tab]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    const tab = btn.getAttribute("data-tab");
+    for(let s in sections) sections[s].style.display="none";
+    sections[tab].style.display="block";
+    document.querySelectorAll("#nav button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
 
-  // NAVIGATION
-  document.querySelectorAll("#nav button[data-tab]").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      const tab=btn.getAttribute("data-tab");
-      for(let s in sections){sections[s].style.display="none";}
-      sections[tab].style.display="block";
-      document.querySelectorAll("#nav button").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
+// REGISTER
+registerBtn.onclick = async ()=>{
+  if(!email.value||!password.value||!phone.value) return alert("Fill all fields");
+  try{
+    const cred = await auth.createUserWithEmailAndPassword(email.value,password.value);
+    await db.collection("users").doc(cred.user.uid).set({
+      phone: phone.value,
+      name: "",
+      role: "seller",
+      verified: false,
+      createdAt: Date.now()
     });
-  });
+    alert("Registered! Now log in.");
+  }catch(e){alert(e.message);}
+};
 
-  // REGISTER
-  registerBtn.onclick=async()=>{
-    if(!email.value||!password.value||!phone.value) return alert("Fill all fields");
-    try{
-      const cred=await auth.createUserWithEmailAndPassword(email.value,password.value);
-      await db.collection("users").doc(cred.user.uid).set({phone:phone.value,name:"",role:"buyer",verified:false,createdAt:Date.now()});
-      alert("Registered! Now log in.");
-    }catch(e){alert(e.message);}
-  };
+// LOGIN
+loginBtn.onclick = ()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
+logoutBtn.onclick = ()=>auth.signOut();
 
-  // LOGIN
-  loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
-  logoutBtn.onclick=()=>auth.signOut();
+// AUTH STATE
+auth.onAuthStateChanged(user=>{
+  if(user){
+    loginSection.style.display="none";
+    nav.style.display="flex";
+    sections.home.style.display="block";
+    loadListings();
+    loadMyListings();
+    loadProfile();
+    loadChats();
+  }else{
+    loginSection.style.display="block";
+    nav.style.display="none";
+    for(let s in sections) sections[s].style.display="none";
+  }
+});
 
-  // AUTH STATE
-  auth.onAuthStateChanged(user=>{
-    if(user){
-      loginSection.style.display="none";
-      nav.style.display="flex";
-      sections.home.style.display="block";
-      loadListings();
-      loadMyListings();
-      loadProfile();
-      loadChat();
-    }else{
-      loginSection.style.display="block";
-      nav.style.display="none";
-      for(let s in sections){sections[s].style.display="none";}
-    }
-  });
-
-  // SUBMIT LISTING
-  submitBtn.onclick=async()=>{
-    const user=auth.currentUser;
-    if(!user) return alert("Login first");
-    if(!title.value||!price.value||!desc.value) return alert("Fill all fields");
-
-    let imageUrl="";
-    if(fileInput.files[0]){
-      const file=fileInput.files[0];
-      const ref=storage.ref().child(`listings/${user.uid}/${Date.now()}_${file.name}`);
-      await ref.put(file);
-      imageUrl=await ref.getDownloadURL();
-    }
-
-    const userDoc=await db.collection("users").doc(user.uid).get();
-    const sellerData=userDoc.data();
-
+// SUBMIT LISTING
+submitBtn.onclick = async ()=>{
+  const user = auth.currentUser;
+  if(!user) return alert("Please login first");
+  if(!title.value||!price.value||!image.value||!whatsapp.value||!desc.value) return alert("Fill all fields");
+  try{
     await db.collection("listings").add({
-      sellerId:user.uid,
-      sellerName:sellerData.name||"No name",
-      sellerVerified:sellerData.verified||false,
-      type:type.value,
-      title:title.value,
-      price:price.value,
-      image:imageUrl,
-      description:desc.value,
-      status:"pending",
-      featured:false,
-      createdAt:Date.now()
+      sellerId: user.uid,
+      type: type.value,
+      title: title.value,
+      price: price.value,
+      image: image.value,
+      whatsapp: whatsapp.value,
+      description: desc.value,
+      status: "pending",
+      featured: false,
+      createdAt: Date.now()
     });
     alert("Listing submitted!");
-    title.value=""; price.value=""; desc.value=""; fileInput.value="";
-    loadMyListings(); loadListings();
-  };
+    title.value=""; price.value=""; image.value=""; whatsapp.value=""; desc.value="";
+    loadMyListings();
+    loadListings();
+  }catch(e){alert(e.message);}
+};
 
-  // LOAD LISTINGS
-  async function loadListings(){
-    const snap=await db.collection("listings").where("status","==","approved").get();
-    listings.innerHTML="";
-    snap.forEach(doc=>{
-      const d=doc.data();
-      if(d.title.toLowerCase().includes(search.value.toLowerCase())){
-        listings.innerHTML+=`<div class="card">
-          ${d.featured?'<span class="badge">FEATURED</span>':''}
-          ${d.sellerVerified?'<span class="badge">VERIFIED SELLER</span>':''}
-          <img src="${d.image||'https://via.placeholder.com/300'}">
-          <h4>${d.title}</h4>
-          <p>${d.price} • ${d.type}</p>
-          <p>Seller: ${d.sellerName}</p>
-        </div>`;
-      }
-    });
-  }
-  search.addEventListener("input",loadListings);
-  filterType.addEventListener("change",loadListings);
-
-  // MY LISTINGS
-  async function loadMyListings(){
-    const user=auth.currentUser;
-    if(!user) return;
-    const snap=await db.collection("listings").where("sellerId","==",user.uid).get();
-    myListings.innerHTML="";
-    snap.forEach(doc=>{
-      const d=doc.data();
-      myListings.innerHTML+=`<div class="card">
-        ${d.status==="pending"?'🔒 Pending':'✅ Approved'}
+// LOAD ALL APPROVED LISTINGS
+async function loadListings(){
+  let query = db.collection("listings").where("status","==","approved");
+  if(filterType.value) query = query.where("type","==",filterType.value);
+  const snapshot = await query.get();
+  listings.innerHTML="";
+  snapshot.forEach(doc=>{
+    const d = doc.data();
+    if(d.title.toLowerCase().includes(search.value.toLowerCase())){
+      listings.innerHTML+=`
+      <div class="card">
+        ${d.featured?'<div class="featured">FEATURED</div>':''}
+        <img src="${d.image||'https://via.placeholder.com/200x300'}">
+        ${d.sellerVerified?'<div class="verified">VERIFIED</div>':''}
         <h4>${d.title}</h4>
-        <button onclick="editListing('${doc.id}','${d.title}','${d.price}','${d.description}')">Edit</button>
-        <button onclick="deleteListing('${doc.id}')">Delete</button>
+        <p>${d.price} • ${d.type} • ${d.description}</p>
+        <a href="https://wa.me/${d.whatsapp}" target="_blank">WhatsApp</a>
       </div>`;
+    }
+  });
+}
+search.addEventListener("input", loadListings);
+filterType.addEventListener("change", loadListings);
+
+// LOAD SELLER'S LISTINGS
+async function loadMyListings(){
+  const user = auth.currentUser;
+  if(!user) return;
+  const snapshot = await db.collection("listings").where("sellerId","==",user.uid).get();
+  myListings.innerHTML="";
+  snapshot.forEach(doc=>{
+    const d = doc.data();
+    myListings.innerHTML+=`
+    <div class="card">
+      ${d.status==="pending"?'🔒 Pending':'✅ Approved'} ${d.featured?'★ Featured':''}
+      <h4>${d.title}</h4>
+      <button onclick="editListing('${doc.id}','${d.title}','${d.price}','${d.image}','${d.whatsapp}','${d.description}')">Edit</button>
+      <button onclick="deleteListing('${doc.id}')">Delete</button>
+    </div>`;
+  });
+}
+window.editListing = async (id,t,p,img,wa,descVal)=>{
+  title.value=t; price.value=p; image.value=img; whatsapp.value=wa; desc.value=descVal;
+  if(confirm("Save changes?")){
+    await db.collection("listings").doc(id).update({
+      title:title.value,
+      price:price.value,
+      image:image.value,
+      whatsapp:whatsapp.value,
+      description:desc.value,
+      status:"pending"
     });
+    alert("Listing updated!");
+    loadMyListings(); loadListings();
   }
-  window.editListing=async(id,t,p,descVal)=>{
-    title.value=t; price.value=p; desc.value=descVal;
-    if(confirm("Save changes?")){
-      await db.collection("listings").doc(id).update({title:title.value,price:price.value,description:desc.value,status:"pending"});
-      loadMyListings(); loadListings();
-    }
-  };
-  window.deleteListing=async(id)=>{
-    if(confirm("Delete listing?")){await db.collection("listings").doc(id).delete(); loadMyListings(); loadListings();}
-  };
+};
+window.deleteListing = async id=>{
+  if(confirm("Delete listing?")){await db.collection("listings").doc(id).delete(); loadMyListings(); loadListings();}
+};
 
-  // PROFILE
-  async function loadProfile(){
-    const user=auth.currentUser; if(!user) return;
-    const doc=await db.collection("users").doc(user.uid).get();
-    if(doc.exists){
-      const d=doc.data();
-      profileName.value=d.name||"";
-      profilePhone.value=d.phone||"";
-      profileLocation.value=d.location||"";
-    }
+// PROFILE
+async function loadProfile(){
+  const user = auth.currentUser;
+  if(!user) return;
+  const doc = await db.collection("users").doc(user.uid).get();
+  if(doc.exists){
+    const d = doc.data();
+    profileName.value=d.name||"";
+    profilePhone.value=d.phone||"";
+    profileLocation.value=d.location||"";
   }
-  saveProfileBtn.onclick=async()=>{
-    const user=auth.currentUser; if(!user) return alert("Login first");
-    await db.collection("users").doc(user.uid).update({name:profileName.value,phone:profilePhone.value,location:profileLocation.value});
-    alert("Profile updated!");
-  };
+}
+saveProfileBtn.onclick = async ()=>{
+  const user = auth.currentUser;
+  if(!user) return alert("Please login first");
+  await db.collection("users").doc(user.uid).update({
+    name: profileName.value,
+    phone: profilePhone.value,
+    location: profileLocation.value
+  });
+  alert("Profile updated!");
+};
 
-  // SUPPORT CHAT
-  async function loadChat(){
-    const user=auth.currentUser; if(!user) return;
-    db.collection("messages").doc(user.uid).collection("messages").orderBy("time").onSnapshot(snap=>{
-      chatBox.innerHTML="";
+// SUPPORT CHAT
+async function loadChats(){
+  const user = auth.currentUser;
+  if(!user) return;
+  const snapshot = await db.collection("messages").where("userId","==",user.uid).get();
+  chatList.innerHTML="";
+  snapshot.forEach(doc=>{
+    const d = doc.data();
+    chatList.innerHTML+=`
+    <div class="card">
+      <div class="chatBox" id="chat_${doc.id}"></div>
+      <input placeholder="Type message..." onkeydown="if(event.key==='Enter')sendSupport('${doc.id}',this)">
+    </div>`;
+    loadChatMessages(doc.id);
+  });
+}
+
+async function loadChatMessages(chatId){
+  db.collection("messages").doc(chatId).collection("messages").orderBy("time")
+    .onSnapshot(snap=>{
+      const box = document.getElementById("chat_"+chatId);
+      if(!box) return;
+      box.innerHTML="";
       snap.forEach(m=>{
-        const d=m.data();
-        chatBox.innerHTML+=`<div><b>${d.from==="admin"?"Admin":"You"}:</b> ${d.text}</div>`;
+        const data = m.data();
+        box.innerHTML+=`<div><b>${data.from==="admin"?"Admin":"You"}:</b> ${data.text}</div>`;
       });
-      chatBox.scrollTop=chatBox.scrollHeight;
+      box.scrollTop = box.scrollHeight;
     });
-  }
-  window.sendMessage=async()=>{
-    const user=auth.currentUser; if(!user) return;
-    if(!chatInput.value) return;
-    const ref=db.collection("messages").doc(user.uid).collection("messages");
-    await ref.add({from:"user",text:chatInput.value,time:Date.now()});
-    chatInput.value="";
-  };
-});
+}
+
+function sendSupport(chatId,input){
+  if(!input.value) return;
+  db.collection("messages").doc(chatId).collection("messages").add({
+    from:"user",
+    text:input.value,
+    time:Date.now()
+  });
+  input.value="";
+}
+
 </script>
 </body>
 </html>
