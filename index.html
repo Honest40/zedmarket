@@ -2,188 +2,60 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ZedMarket 🇿🇲</title>
+<title>ZedMarket 🇿🇲 Seller</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-:root{
-  --blue:#0f2a44;
-  --green:#198754;
-  --orange:#ff9800;
-  --bg:#f4f6f9;
-}
-
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:var(--bg);
-}
-
-header{
-  background:linear-gradient(45deg,var(--blue),#1f5fa0);
-  color:#fff;
-  padding:14px;
-  text-align:center;
-  font-size:22px;
-  font-weight:bold;
-}
-
-nav{
-  display:none;
-  background:#fff;
-  box-shadow:0 3px 10px rgba(0,0,0,.1);
-  position:sticky;
-  top:0;
-  z-index:10;
-}
-
-nav button{
-  flex:1;
-  padding:12px;
-  border:none;
-  background:#fff;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-nav button.active{
-  border-bottom:4px solid var(--orange);
-  color:var(--orange);
-}
-
-section{
-  display:none;
-  padding:15px;
-}
-
-section.active{display:block}
-
-.card{
-  background:#fff;
-  padding:14px;
-  margin:15px 0;
-  border-radius:16px;
-  box-shadow:0 10px 25px rgba(0,0,0,.08);
-  position:relative;
-}
-
-.card img{
-  width:100%;
-  max-height:75vh;
-  object-fit:contain;
-  background:#000;
-  border-radius:12px;
-}
-
-input,select,textarea{
-  width:100%;
-  padding:11px;
-  margin:8px 0;
-  border-radius:10px;
-  border:1px solid #ccc;
-}
-
-button.main{
-  width:100%;
-  padding:13px;
-  border:none;
-  border-radius:12px;
-  background:linear-gradient(45deg,var(--orange),#ffb74d);
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.price{
-  font-size:22px;
-  font-weight:bold;
-  color:#fff;
-  background:linear-gradient(45deg,var(--green),#2ecc71);
-  padding:6px 14px;
-  border-radius:20px;
-  display:inline-block;
-}
-
-.badge{
-  position:absolute;
-  top:10px;
-  padding:5px 12px;
-  border-radius:20px;
-  font-size:12px;
-  font-weight:bold;
-}
-
-.verified{left:10px;background:#0d6efd;color:#fff}
-.notVerified{left:10px;background:#6c757d;color:#fff}
-.sponsored{right:10px;background:linear-gradient(45deg,var(--orange),#ffc107)}
-
-.whatsapp{
-  display:block;
-  margin-top:12px;
-  padding:14px;
-  background:#25D366;
-  color:#fff;
-  text-align:center;
-  border-radius:12px;
-  text-decoration:none;
-  font-weight:bold;
-}
-
-.chatBox{
-  height:220px;
-  overflow:auto;
-  background:#fafafa;
-  border-radius:10px;
-  border:1px solid #ccc;
-  padding:10px;
-  margin-bottom:8px;
-}
+body{margin:0;font-family:Arial;background:#f4f4f4}
+header{background:#ff7a00;color:#fff;padding:15px;text-align:center;font-size:22px}
+nav{display:none;background:#fff;position:fixed;bottom:0;width:100%;border-top:1px solid #ccc}
+nav button{flex:1;padding:12px;border:none;background:none;font-size:14px}
+section{display:none;padding:15px}
+.active{display:block}
+.card{background:#fff;padding:12px;border-radius:8px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,.1)}
+input,textarea{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
+.main{background:#ff7a00;color:#fff;padding:10px;border:none;border-radius:6px;width:100%}
+.price{font-size:22px;color:#ff7a00;font-weight:bold}
+.badge{background:#ffc107;padding:3px 6px;border-radius:4px;font-size:12px}
+.verify{background:#198754;color:#fff}
+.chatBox{height:200px;overflow:auto;border:1px solid #ddd;padding:8px;border-radius:6px}
+img{width:100%;max-height:320px;object-fit:contain;border-radius:6px}
+.refresh{background:#0d6efd;color:#fff}
+.whatsapp{background:#25D366;color:#fff}
 </style>
 </head>
 
 <body>
 
-<header>ZedMarket 🇿🇲</header>
+<header>ZedMarket Seller 🇿🇲</header>
 
 <!-- AUTH -->
-<section id="auth" class="active">
+<section id="authPage" class="active">
   <h3>Login / Register</h3>
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
-  <button class="main" id="loginBtn">Continue</button>
+  <button class="main" id="loginBtn">Login / Register</button>
+  <p id="authError" style="color:red"></p>
 </section>
-
-<!-- NAV -->
-<nav id="nav">
-  <button data-tab="home" class="active">Home</button>
-  <button data-tab="sell">Sell</button>
-  <button data-tab="my">My Listings</button>
-  <button data-tab="chat">Support</button>
-  <button data-tab="profile">Profile</button>
-</nav>
 
 <!-- HOME -->
 <section id="home">
-  <h3>Marketplace</h3>
-  <div id="listings"></div>
+  <button class="refresh" onclick="loadHome()">🔄 Refresh</button>
+  <div id="homeListings"></div>
 </section>
 
-<!-- SELL -->
-<section id="sell">
-  <h3>Post Listing</h3>
+<!-- ADD -->
+<section id="add">
+  <h3>Add Listing</h3>
   <input id="title" placeholder="Title">
-  <input id="price" placeholder="Price (ZMW)">
-  <select id="type">
-    <option>Product</option>
-    <option>Service</option>
-  </select>
-  <input id="image" placeholder="Image URL (https://...)">
-  <textarea id="desc" placeholder="Description"></textarea>
-  <button class="main" id="submit">Submit</button>
+  <input id="price" placeholder="Price">
+  <input id="imageUrl" placeholder="Image URL (portrait supported)">
+  <label><input type="checkbox" id="sponsored"> Sponsored</label>
+  <button class="main" onclick="addListing()">Post</button>
 </section>
 
 <!-- MY LISTINGS -->
-<section id="my">
+<section id="mine">
   <h3>My Listings</h3>
   <div id="myListings"></div>
 </section>
@@ -192,152 +64,140 @@ button.main{
 <section id="chat">
   <h3>Support Chat</h3>
   <div class="chatBox" id="chatBox"></div>
-  <input id="chatInput" placeholder="Type message">
-  <button class="main" id="sendMsg">Send</button>
+  <input id="chatMsg" placeholder="Type message">
 </section>
 
 <!-- PROFILE -->
 <section id="profile">
   <h3>Profile</h3>
-  <input id="name" placeholder="Your Name">
-  <input id="phone" placeholder="WhatsApp 260...">
-  <button class="main" id="saveProfile">Save</button>
-  <br><br>
-  <button class="main" onclick="logout()">Logout</button>
+  <input id="name" placeholder="Name">
+  <input id="phone" placeholder="Phone">
+  <button class="main" onclick="saveProfile()">Save</button>
+  <button class="main verify">Verified Seller</button>
+  <button class="main whatsapp" onclick="openWhatsApp()">WhatsApp</button>
+  <button onclick="logout()">Logout</button>
 </section>
 
-<!-- FIREBASE -->
+<nav id="nav">
+  <button onclick="showTab('home')">Home</button>
+  <button onclick="showTab('add')">Add</button>
+  <button onclick="showTab('mine')">My Ads</button>
+  <button onclick="showTab('chat')">Chat</button>
+  <button onclick="showTab('profile')">Profile</button>
+</nav>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
 firebase.initializeApp({
-  apiKey:"AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
-  authDomain:"pa-mwera.firebaseapp.com",
-  projectId:"pa-mwera",
-  storageBucket:"pa-mwera.firebasestorage.app",
-  messagingSenderId:"959795010421",
-  appId:"1:959795010421:web:84e1cc1517a5d98598113c"
+ apiKey:"AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
+ authDomain:"pa-mwera.firebaseapp.com",
+ projectId:"pa-mwera"
 });
 
-const auth=firebase.auth(), db=firebase.firestore();
+const firebaseAuth=firebase.auth();
+const db=firebase.firestore();
 
-loginBtn.onclick=async()=>{
-  try{await auth.signInWithEmailAndPassword(email.value,password.value);}
-  catch{await auth.createUserWithEmailAndPassword(email.value,password.value);}
-};
-
-auth.onAuthStateChanged(async u=>{
-  if(!u) return;
-  auth.style.display="none";
-  nav.style.display="flex";
-  showTab("home");
-
-  const d=await db.collection("users").doc(u.uid).get();
-  if(d.exists){
-    name.value=d.data().name||"";
-    phone.value=d.data().phone||"";
-  }
-  loadHome(); loadMine(); loadChat();
-});
-
-document.querySelectorAll("nav button").forEach(b=>{
-  b.onclick=()=>showTab(b.dataset.tab);
-});
-
-function showTab(t){
-  document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(t).classList.add("active");
-  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-  document.querySelector(`[data-tab="${t}"]`).classList.add("active");
+function showTab(id){
+ document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
 }
 
-saveProfile.onclick=()=>{
-  db.collection("users").doc(auth.currentUser.uid).set({
-    name:name.value,
-    phone:phone.value,
-    verified:false
-  },{merge:true});
-};
+loginBtn.onclick=async()=>{
+ try{
+  await firebaseAuth.signInWithEmailAndPassword(email.value,password.value)
+ }catch(e){
+  if(e.code==="auth/user-not-found"){
+   await firebaseAuth.createUserWithEmailAndPassword(email.value,password.value)
+  }else authError.textContent=e.message
+ }
+}
 
-submit.onclick=()=>{
-  db.collection("listings").add({
-    title:title.value,price:price.value,type:type.value,
-    image:image.value,desc:desc.value,
-    seller:auth.currentUser.uid,
-    sellerName:name.value,
-    sellerVerified:false,
-    whatsapp:phone.value,
-    status:"pending",
-    sponsored:false,
-    created:Date.now()
-  });
-  title.value=price.value=image.value=desc.value="";
-};
+firebaseAuth.onAuthStateChanged(async u=>{
+ if(!u) return;
+ authPage.style.display="none";
+ nav.style.display="flex";
+ showTab("home");
+ await db.collection("users").doc(u.uid).set({name:"",phone:"",verified:true},{merge:true});
+ loadHome();loadMine();loadChat();
+});
+
+function logout(){firebaseAuth.signOut();location.reload()}
+
+async function addListing(){
+ await db.collection("listings").add({
+  title:title.value,
+  price:price.value,
+  image:imageUrl.value,
+  sponsored:sponsored.checked,
+  uid:firebaseAuth.currentUser.uid,
+  status:"approved"
+ });
+ alert("Posted!");
+}
 
 function loadHome(){
-  db.collection("listings").where("status","==","approved")
-  .orderBy("created","desc").onSnapshot(s=>{
-    listings.innerHTML="";
-    s.forEach(d=>{
-      const x=d.data();
-      listings.innerHTML+=`
-      <div class="card">
-        <div class="badge ${x.sellerVerified?'verified':'notVerified'}">
-          ${x.sellerVerified?'VERIFIED':'NOT VERIFIED'}
-        </div>
-        ${x.sponsored?'<div class="badge sponsored">SPONSORED</div>':''}
-        <img src="${x.image}">
-        <h3>${x.title}</h3>
-        <div class="price">ZMW ${x.price}</div>
-        <p>${x.desc}</p>
-        <a class="whatsapp" href="https://wa.me/${x.whatsapp}" target="_blank">
-          💬 WhatsApp Seller
-        </a>
-      </div>`;
-    });
-  });
+ db.collection("listings").where("status","==","approved")
+ .onSnapshot(s=>{
+  homeListings.innerHTML="";
+  s.forEach(d=>{
+   const x=d.data();
+   homeListings.innerHTML+=`
+   <div class="card">
+    <img src="${x.image}">
+    <h4>${x.title} ${x.sponsored?'<span class="badge">SPONSORED</span>':''}</h4>
+    <div class="price">K ${x.price}</div>
+   </div>`
+  })
+ })
 }
 
 function loadMine(){
-  db.collection("listings").where("seller","==",auth.currentUser.uid)
-  .onSnapshot(s=>{
-    myListings.innerHTML="";
-    s.forEach(d=>{
-      myListings.innerHTML+=`
-      <div class="card">
-        <h4>${d.data().title}</h4>
-        <div class="price">ZMW ${d.data().price}</div>
-        <p>Status: ${d.data().status}</p>
-        <button class="main" onclick="db.collection('listings').doc('${d.id}').delete()">Delete</button>
-      </div>`;
-    });
-  });
+ db.collection("listings").where("uid","==",firebaseAuth.currentUser.uid)
+ .onSnapshot(s=>{
+  myListings.innerHTML="";
+  s.forEach(d=>{
+   const x=d.data();
+   myListings.innerHTML+=`
+   <div class="card">
+    <img src="${x.image}">
+    <h4>${x.title}</h4>
+    <div class="price">K ${x.price}</div>
+   </div>`
+  })
+ })
 }
 
 function loadChat(){
-  db.collection("messages").doc(auth.currentUser.uid)
-  .collection("messages").orderBy("time")
-  .onSnapshot(s=>{
-    chatBox.innerHTML="";
-    s.forEach(m=>{
-      chatBox.innerHTML+=`<div><b>${m.data().from}:</b> ${m.data().text}</div>`;
-    });
-    chatBox.scrollTop=chatBox.scrollHeight;
-  });
+ db.collection("messages").doc(firebaseAuth.currentUser.uid)
+ .collection("chat").orderBy("time")
+ .onSnapshot(s=>{
+  chatBox.innerHTML="";
+  s.forEach(m=>{
+   chatBox.innerHTML+=`<div>${m.data().text}</div>`
+  })
+ })
+ chatMsg.onkeydown=e=>{
+  if(e.key==="Enter"){
+   db.collection("messages").doc(firebaseAuth.currentUser.uid)
+   .collection("chat").add({text:chatMsg.value,time:Date.now(),from:"seller"})
+   chatMsg.value=""
+  }
+ }
 }
 
-sendMsg.onclick=()=>{
-  db.collection("messages").doc(auth.currentUser.uid)
-  .collection("messages").add({
-    from:"user",text:chatInput.value,time:Date.now()
-  });
-  chatInput.value="";
-};
+async function saveProfile(){
+ await db.collection("users").doc(firebaseAuth.currentUser.uid)
+ .update({name:name.value,phone:phone.value})
+ alert("Saved")
+}
 
-function logout(){auth.signOut();location.reload();}
+function openWhatsApp(){
+ window.open("https://wa.me/260"+phone.value.replace(/\D/g,""))
+}
 </script>
-
 </body>
 </html>
