@@ -3,223 +3,343 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZedMarket 🇿🇲</title>
-
+<title>ZedMarket 🇿🇲 - User Portal</title>
 <style>
-body{font-family:Arial;margin:0;background:#f2f2f2}
+body{font-family:Arial,sans-serif;margin:0;background:#f5f5f5}
 header{background:#0f2a44;color:#fff;padding:15px;text-align:center;font-size:22px}
 nav{display:flex;background:#198754}
-nav button{flex:1;padding:10px;border:none;color:#fff;font-size:16px;cursor:pointer}
+nav button{flex:1;padding:10px;color:#fff;border:none;cursor:pointer;font-size:16px}
 nav button.active{background:#0f2a44}
 section{display:none;padding:15px}
-input,select,textarea,button{width:100%;padding:10px;margin:6px 0;border-radius:5px;border:1px solid #ccc}
-button{background:#198754;color:#fff}
-.card{background:#fff;padding:10px;margin:10px 0;border-radius:6px;position:relative}
-.card img{width:100%;height:180px;object-fit:cover;border-radius:5px}
-.featured{position:absolute;top:10px;right:10px;background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-weight:bold}
-.verified{background:#0d6efd;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;display:inline-block;margin-bottom:5px}
-.seller{font-size:13px;color:#555;margin-bottom:5px}
+section.active{display:block}
+input,textarea,select,button{width:100%;padding:10px;margin:6px 0;border-radius:5px;border:1px solid #ccc}
+button{background:#198754;color:#fff;cursor:pointer}
+.card{background:#fff;padding:10px;margin:10px 0;border-radius:6px;position:relative;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+.card img{width:100%;height:180px;object-fit:cover;border-radius:5px;}
+.card .badge{position:absolute;top:10px;right:10px;background:#ffc107;color:#000;padding:4px 8px;border-radius:3px;font-weight:bold;font-size:12px;}
+.chatBox{height:200px;overflow:auto;background:#fafafa;padding:8px;margin-bottom:5px;border-radius:5px;border:1px solid #ccc;}
+#notificationContainer{position:fixed;top:10px;right:10px;width:300px;z-index:9999;}
 </style>
 </head>
-
 <body>
 
 <header>ZedMarket 🇿🇲</header>
 
-<section id="login">
+<!-- LOGIN/REGISTER -->
+<section id="login" class="active">
 <h3>Login / Register</h3>
 <input id="email" placeholder="Email">
-<input id="password" type="password">
+<input id="password" type="password" placeholder="Password">
 <input id="phone" placeholder="WhatsApp 260...">
 <button id="registerBtn">Register</button>
 <button id="loginBtn">Login</button>
 </section>
 
+<!-- NAV -->
 <nav id="nav" style="display:none">
 <button class="active" data-tab="home">Home</button>
 <button data-tab="seller">Seller</button>
 <button data-tab="profile">Profile</button>
+<button data-tab="support">Support</button>
 <button id="logoutBtn">Logout</button>
 </nav>
 
+<!-- HOME -->
 <section id="home">
-<input id="search" placeholder="Search listings...">
+<h3>Search & Filter</h3>
+<input type="text" id="search" placeholder="Search by title...">
+<select id="filterType">
+<option value="">All Types</option>
+<option value="product">Product</option>
+<option value="service">Service</option>
+</select>
 <div id="listings"></div>
 </section>
 
+<!-- SELLER -->
 <section id="seller">
-<h3>Post Listing</h3>
-
+<h3>Post a Listing</h3>
 <select id="type">
 <option value="product">Product</option>
 <option value="service">Service</option>
 </select>
-
-<select id="featuredOption">
-<option value="false">Normal (Free)</option>
-<option value="true">⭐ Featured (Paid)</option>
-</select>
-
-<input id="paymentRef" placeholder="Payment reference (if featured)">
 <input id="title" placeholder="Title">
-<input id="price" placeholder="Price">
-<input id="imageUrl" placeholder="Image URL (optional)">
-<input type="file" id="imageFile" accept="image/*">
+<input id="price" placeholder="Price or Call">
+<input id="image" type="file" accept="image/*">
 <input id="whatsapp" placeholder="WhatsApp 260...">
 <textarea id="desc" placeholder="Description"></textarea>
-
 <button id="submitBtn">Submit Listing</button>
 
 <h3>Your Listings</h3>
 <div id="myListings"></div>
 </section>
 
+<!-- PROFILE -->
 <section id="profile">
-<input id="pName" placeholder="Name">
-<input id="pPhone" placeholder="WhatsApp">
-<input id="pLocation" placeholder="Location">
-<button id="saveProfile">Save Profile</button>
+<h3>Edit Profile</h3>
+<input id="profileName" placeholder="Name">
+<input id="profilePhone" placeholder="WhatsApp 260...">
+<input id="profileLocation" placeholder="Location">
+<button id="saveProfileBtn">Save Profile</button>
 </section>
 
+<!-- SUPPORT -->
+<section id="support">
+<h3>Support Chat</h3>
+<div id="chatList"></div>
+<div>
+<textarea id="supportMessage" placeholder="Type message..." rows="3"></textarea>
+<button id="sendSupport">Send</button>
+</div>
+</section>
+
+<!-- Notifications -->
+<div id="notificationContainer"></div>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <script>
-firebase.initializeApp({
-apiKey:"AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
-authDomain:"pa-mwera.firebaseapp.com",
-projectId:"pa-mwera",
-storageBucket:"pa-mwera.firebasestorage.app"
-});
-
-const auth=firebase.auth();
-const db=firebase.firestore();
-const storage=firebase.storage();
-
-/* NAV */
-document.querySelectorAll("nav button[data-tab]").forEach(b=>{
-b.onclick=()=>{
-document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
-b.classList.add("active");
-document.querySelectorAll("section").forEach(s=>s.style.display="none");
-document.getElementById(b.dataset.tab).style.display="block";
+window.addEventListener('load',()=>{
+// Firebase config
+const firebaseConfig = {
+apiKey: "AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
+authDomain: "pa-mwera.firebaseapp.com",
+projectId: "pa-mwera",
+storageBucket: "pa-mwera.firebasestorage.app",
+messagingSenderId: "959795010421",
+appId: "1:959795010421:web:84e1cc1517a5d98598113c"
 };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// DOM
+const loginSection = document.getElementById("login");
+const nav = document.getElementById("nav");
+const sections = {home:document.getElementById("home"),seller:document.getElementById("seller"),profile:document.getElementById("profile"),support:document.getElementById("support")};
+const submitBtn = document.getElementById("submitBtn");
+const title = document.getElementById("title");
+const price = document.getElementById("price");
+const image = document.getElementById("image");
+const whatsapp = document.getElementById("whatsapp");
+const desc = document.getElementById("desc");
+const type = document.getElementById("type");
+const search = document.getElementById("search");
+const filterType = document.getElementById("filterType");
+const listings = document.getElementById("listings");
+const myListings = document.getElementById("myListings");
+const registerBtn = document.getElementById("registerBtn");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const profileName = document.getElementById("profileName");
+const profilePhone = document.getElementById("profilePhone");
+const profileLocation = document.getElementById("profileLocation");
+const saveProfileBtn = document.getElementById("saveProfileBtn");
+const chatList = document.getElementById("chatList");
+const supportMessage = document.getElementById("supportMessage");
+const sendSupport = document.getElementById("sendSupport");
+
+// NAV
+document.querySelectorAll("#nav button[data-tab]").forEach(button=>{
+button.addEventListener("click",()=>{
+const tab = button.getAttribute("data-tab");
+for(let s in sections){sections[s].style.display="none";}
+sections[tab].style.display="block";
+document.querySelectorAll("#nav button").forEach(b=>b.classList.remove("active"));
+button.classList.add("active");
+});
 });
 
-/* AUTH */
+// Notifications
+function showNotification(message,type="info"){
+const container=document.getElementById("notificationContainer");
+const notif=document.createElement("div");
+notif.textContent=message;
+notif.style.background = type==="success"?"#198754":type==="error"?"#dc3545":"#0f2a44";
+notif.style.color="#fff";
+notif.style.padding="10px";
+notif.style.marginTop="5px";
+notif.style.borderRadius="5px";
+notif.style.boxShadow="0 1px 4px rgba(0,0,0,0.2)";
+container.appendChild(notif);
+setTimeout(()=>notif.remove(),5000);
+}
+
+// REGISTER/LOGIN
 registerBtn.onclick=async()=>{
-if(!email.value||!password.value||!phone.value)return alert("Fill all fields");
-const c=await auth.createUserWithEmailAndPassword(email.value,password.value);
-await db.collection("users").doc(c.user.uid).set({
-phone:phone.value,name:"Seller",isVerified:false
-});
-alert("Registered");
+if(!email.value||!password.value||!phone.value){return alert("Fill all fields");}
+try{
+const cred = await auth.createUserWithEmailAndPassword(email.value,password.value);
+await db.collection("users").doc(cred.user.uid).set({phone:phone.value,name:"",role:"user",verified:false,createdAt:Date.now()});
+alert("Registered! Now login."); 
+}catch(e){alert(e.message);}
 };
-
-loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value);
+loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
 logoutBtn.onclick=()=>auth.signOut();
 
-auth.onAuthStateChanged(u=>{
-if(u){
-login.style.display="none";
+// AUTH STATE
+auth.onAuthStateChanged(user=>{
+if(user){
+loginSection.style.display="none";
 nav.style.display="flex";
-home.style.display="block";
-loadListings(); loadMy(); loadProfile();
+sections.home.style.display="block";
+loadListings();
+loadMyListings();
+loadProfile();
+loadChats();
+listenListingStatusChanges();
 }else{
-login.style.display="block";
+loginSection.style.display="block";
 nav.style.display="none";
+for(let s in sections){sections[s].style.display="none";}
 }
 });
 
-/* SUBMIT LISTING (UPLOAD FIXED) */
+// SUBMIT LISTING WITH IMAGE UPLOAD
 submitBtn.onclick=async()=>{
-const u=auth.currentUser;
-if(!u)return alert("Login first");
+const user = auth.currentUser;
+if(!user) return alert("Please login first");
+if(!title.value||!price.value||!whatsapp.value||!desc.value) return alert("Fill all fields");
 
-let imageFinal=imageUrl.value.trim();
-
-if(imageFile.files.length){
-const ref=storage.ref("listings/"+u.uid+"_"+Date.now());
-await ref.put(imageFile.files[0]);
-imageFinal=await ref.getDownloadURL();
+let imageUrl = "";
+if(image.files.length>0){
+const file = image.files[0];
+const storageRef = storage.ref().child('listing_images/'+Date.now()+"_"+file.name);
+await storageRef.put(file);
+imageUrl = await storageRef.getDownloadURL();
 }
 
+try{
 await db.collection("listings").add({
-sellerId:u.uid,
+sellerId:user.uid,
+type:type.value,
 title:title.value,
 price:price.value,
-image:imageFinal||null,
+image:imageUrl,
 whatsapp:whatsapp.value,
 description:desc.value,
-type:type.value,
-featured:featuredOption.value==="true",
-paymentRef:paymentRef.value||null,
-status:featuredOption.value==="true"?"pending_payment":"pending",
+status:"pending",
+featured:false,
 createdAt:Date.now()
 });
-
-alert("Listing submitted");
+alert("Listing submitted!");
+title.value=""; price.value=""; image.value=""; whatsapp.value=""; desc.value="";
+loadMyListings();
+}catch(e){alert(e.message);}
 };
 
-/* LOAD APPROVED LISTINGS (NO INDEX BUG) */
+// LIVE LISTING STATUS NOTIFICATIONS
+function listenListingStatusChanges(){
+const user = auth.currentUser;
+if(!user) return;
+db.collection("listings").where("sellerId","==",user.uid)
+.onSnapshot(snapshot=>{
+snapshot.docChanges().forEach(change=>{
+if(change.type==="modified"){
+const data=change.doc.data();
+if(data.status==="approved") showNotification(`Your listing "${data.title}" was approved!`,"success");
+else if(data.status==="rejected") showNotification(`Your listing "${data.title}" was rejected!`,"error");
+}
+});
+});
+}
+
+// LOAD ALL APPROVED LISTINGS
 async function loadListings(){
-const snap=await db.collection("listings").get();
+const snap = await db.collection("listings").where("status","==","approved").orderBy("createdAt","desc").get();
 listings.innerHTML="";
-
-let approved=snap.docs
-.map(d=>({id:d.id,...d.data()}))
-.filter(l=>l.status==="approved")
-.sort((a,b)=>b.featured-a.featured || b.createdAt-a.createdAt);
-
-for(const l of approved){
-const sellerDoc=await db.collection("users").doc(l.sellerId).get();
-const seller=sellerDoc.exists?sellerDoc.data():{};
-const verified=seller.isVerified;
-
-listings.innerHTML+=`
-<div class="card">
-${verified?'<div class="verified">✔ VERIFIED SELLER</div>':''}
-${l.featured?'<div class="featured">FEATURED</div>':''}
-<div class="seller">Seller: ${seller.name||"Seller"}</div>
-<img src="${l.image||'https://via.placeholder.com/300'}">
-<h4>${l.title}</h4>
-<p>${l.price}</p>
-<a href="https://wa.me/${l.whatsapp}" target="_blank">WhatsApp</a>
+snap.forEach(doc=>{
+const d = doc.data();
+if(d.title.toLowerCase().includes(search.value.toLowerCase())){
+listings.innerHTML+=`<div class="card">
+${d.featured?'<div class="badge">FEATURED</div>':''}
+<img src="${d.image||'https://via.placeholder.com/300'}">
+<h4>${d.title}</h4>
+<p>${d.price} • ${d.type} • ${d.description}</p>
+<p>Seller: ${d.sellerName||"Anonymous"} ${d.sellerVerified?'✅':'❌'}</p>
+<a href="https://wa.me/${d.whatsapp}" target="_blank">WhatsApp Seller</a>
 </div>`;
 }
+});
 }
+search.addEventListener("input",loadListings);
+filterType.addEventListener("change",loadListings);
 
-/* MY LISTINGS */
-async function loadMy(){
-const u=auth.currentUser;
-const snap=await db.collection("listings").where("sellerId","==",u.uid).get();
+// LOAD MY LISTINGS
+async function loadMyListings(){
+const user = auth.currentUser;
+if(!user) return;
+const snap = await db.collection("listings").where("sellerId","==",user.uid).orderBy("createdAt","desc").get();
 myListings.innerHTML="";
 snap.forEach(doc=>{
-const d=doc.data();
-myListings.innerHTML+=`
-<div class="card">
-${d.status}
-<button onclick="db.collection('listings').doc('${doc.id}').delete()">Delete</button>
+const d = doc.data();
+myListings.innerHTML+=`<div class="card">
+${d.status==="pending"?'🔒 Pending':'✅ Approved'}
+<h4>${d.title}</h4>
+<button onclick="editListing('${doc.id}','${d.title}','${d.price}','${d.image}','${d.whatsapp}','${d.description}')">Edit</button>
+<button onclick="deleteListing('${doc.id}')">Delete</button>
 </div>`;
 });
 }
+window.editListing=async(id,t,p,img,wa,descVal)=>{
+title.value=t; price.value=p; whatsapp.value=wa; desc.value=descVal; image.value="";
+if(confirm("Save changes?")){
+await db.collection("listings").doc(id).update({title:title.value,price:price.value,image:img,whatsapp:whatsapp.value,description:desc.value,status:"pending"});
+alert("Listing updated!");
+loadMyListings(); loadListings();
+}
+};
+window.deleteListing=async(id)=>{if(confirm("Are you sure?")){await db.collection("listings").doc(id).delete(); loadMyListings(); loadListings();}};
 
-/* PROFILE */
+// PROFILE
 async function loadProfile(){
-const d=await db.collection("users").doc(auth.currentUser.uid).get();
-if(d.exists){
-pName.value=d.data().name||"";
-pPhone.value=d.data().phone||"";
-pLocation.value=d.data().location||"";
+const user = auth.currentUser;
+if(!user) return;
+const docSnap = await db.collection("users").doc(user.uid).get();
+if(docSnap.exists){
+const d = docSnap.data();
+profileName.value=d.name||"";
+profilePhone.value=d.phone||"";
+profileLocation.value=d.location||"";
 }
 }
-saveProfile.onclick=async()=>{
-await db.collection("users").doc(auth.currentUser.uid).update({
-name:pName.value,phone:pPhone.value,location:pLocation.value
+saveProfileBtn.onclick=async()=>{
+const user = auth.currentUser;
+if(!user) return alert("Please login first");
+await db.collection("users").doc(user.uid).update({name:profileName.value,phone:profilePhone.value,location:profileLocation.value});
+alert("Profile updated!");
+};
+
+// SUPPORT CHAT
+function loadChats(){
+const user = auth.currentUser;
+if(!user) return;
+const chatId = user.uid+"_admin";
+db.collection("messages").doc(chatId).collection("messages").orderBy("time").onSnapshot(snap=>{
+chatList.innerHTML="";
+snap.forEach(m=>{
+const d = m.data();
+chatList.innerHTML+=`<div class="card"><b>${d.from==="admin"?"Admin":"You"}:</b> ${d.text}</div>`;
 });
-alert("Profile saved");
+chatList.scrollTop = chatList.scrollHeight;
+});
+}
+sendSupport.onclick=async()=>{
+const user = auth.currentUser;
+if(!user) return alert("Login first");
+if(!supportMessage.value) return;
+const chatId = user.uid+"_admin";
+await db.collection("messages").doc(chatId).collection("messages").add({
+from:"user",
+text:supportMessage.value,
+time:Date.now()
+});
+supportMessage.value="";
 };
 </script>
 
