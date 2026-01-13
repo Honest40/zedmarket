@@ -12,8 +12,8 @@
 }
 body{margin:0;font-family:Arial;background:#f4f4f4}
 header{background:var(--dark);color:#fff;padding:15px;text-align:center;font-size:22px}
-nav{display:none;gap:5px;background:var(--orange);padding:8px}
-nav button{flex:1;border:none;padding:10px;color:#fff;border-radius:6px;font-size:15px}
+nav{display:none;gap:5px;background:var(--orange);padding:8px;display:flex;}
+nav button{flex:1;border:none;padding:10px;color:#fff;border-radius:6px;font-size:15px;cursor:pointer;}
 nav button.active{background:var(--green)}
 section{display:none;padding:15px}
 input,textarea,select,button{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
@@ -25,6 +25,7 @@ button{background:var(--green);color:#fff;font-weight:bold;cursor:pointer}
 img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px}
 .whatsapp{display:block;text-align:center;background:#25d366;color:#fff;padding:10px;border-radius:8px;margin-top:8px;text-decoration:none;font-weight:bold}
 .refresh{background:#6c757d;margin-bottom:10px}
+.searchBox{padding:6px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px}
 </style>
 </head>
 
@@ -48,6 +49,7 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px}
 </nav>
 
 <section id="home">
+  <input class="searchBox" id="searchInput" placeholder="Search listings...">
   <button class="refresh" onclick="loadListings()">🔄 Refresh</button>
   <div id="listings"></div>
 </section>
@@ -97,11 +99,7 @@ function show(id){
 }
 
 // Login/Register
-document.getElementById("loginBtn").onclick=()=>{
-  auth.signInWithEmailAndPassword(email.value,password.value)
-  .catch(e=>alert(e.message));
-};
-
+document.getElementById("loginBtn").onclick=()=> auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
 document.getElementById("registerBtn").onclick=async()=>{
   const c=await auth.createUserWithEmailAndPassword(email.value,password.value);
   await db.collection("users").doc(c.user.uid).set({verified:false,name:"",createdAt:Date.now()});
@@ -125,27 +123,29 @@ auth.onAuthStateChanged(u=>{
   }
 });
 
-document.querySelectorAll("nav button[data-tab]").forEach(b=>{
-  b.onclick=()=>show(b.dataset.tab);
-});
+document.querySelectorAll("nav button[data-tab]").forEach(b=>{b.onclick=()=>show(b.dataset.tab)});
 
 // Load Listings (Home)
 async function loadListings(){
   const snap=await db.collection("listings").where("status","==","approved").get();
+  const searchTerm=document.getElementById("searchInput").value.toLowerCase();
   listings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
+    if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
     listings.innerHTML+=`
     <div class="card">
-      <img src="${d.image}">
+      <img src="${d.image||'https://via.placeholder.com/300'}">
       <h4>${d.title} ${d.featured?'<span class="badge">SPONSORED</span>':''}</h4>
       <div class="price">${d.price}</div>
       <div>${d.sellerVerified?'<span class="badge verified">VERIFIED SELLER</span>':''}</div>
       <p>${d.desc}</p>
-      <a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">💬 WhatsApp Seller</a>
+      ${d.whatsapp?`<a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">💬 WhatsApp Seller</a>`:""}
     </div>`;
   });
 }
+
+document.getElementById("searchInput").addEventListener("input", loadListings);
 
 // Submit Listing (Sell)
 document.getElementById("submit").onclick=async()=>{
@@ -158,6 +158,7 @@ document.getElementById("submit").onclick=async()=>{
     image:image.value,
     whatsapp:whatsapp.value,
     desc:desc.value,
+    sellerId:u.uid,
     status:"pending",
     featured:false,
     sellerVerified:userDoc.data().verified||false,
