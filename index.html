@@ -22,12 +22,10 @@ button{background:var(--green);color:#fff;font-weight:bold;cursor:pointer}
 .card{background:#fff;border-radius:10px;padding:10px;margin:10px 0;box-shadow:0 2px 5px rgba(0,0,0,.1)}
 .price{font-size:20px;color:var(--orange);font-weight:bold}
 .badge{display:inline-block;background:var(--orange);color:#000;padding:3px 6px;border-radius:4px;font-size:12px;margin-left:4px}
-.verified{background:var(--green);color:#fff}
 .pendingBadge{background:#6c757d;color:#fff}
 img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#eee}
 .whatsapp{display:block;text-align:center;background:#25d366;color:#fff;padding:10px;border-radius:8px;margin-top:8px;text-decoration:none;font-weight:bold}
 .refresh{background:#6c757d}
-.editBtn{background:#ffc107;color:#000;margin-top:5px}
 </style>
 </head>
 
@@ -35,7 +33,7 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
 
 <header>ZedMarket 🇿🇲</header>
 
-<section id="auth">
+<section id="authBox">
   <h3>Login / Register</h3>
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
@@ -69,7 +67,6 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <input id="whatsapp" placeholder="WhatsApp (260...)">
   <textarea id="desc" placeholder="Description"></textarea>
   <button id="submit">Submit</button>
-
   <h4>Your Listings</h4>
   <div id="myListings"></div>
 </section>
@@ -91,68 +88,61 @@ firebase.initializeApp({
   projectId:"pa-mwera"
 });
 
-const auth=firebase.auth();
-const db=firebase.firestore();
+const fbAuth = firebase.auth();
+const db = firebase.firestore();
 
-/* UI */
-function show(id){
-  document.querySelectorAll("section").forEach(s=>s.style.display="none");
-  document.getElementById(id).style.display="block";
-  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-  const btn=document.querySelector(`nav button[data-tab="${id}"]`);
-  if(btn)btn.classList.add("active");
-}
+const authBox = document.getElementById("authBox");
+const nav = document.getElementById("nav");
 
 /* AUTH */
-loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
+loginBtn.onclick=()=>fbAuth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
 registerBtn.onclick=async()=>{
-  const c=await auth.createUserWithEmailAndPassword(email.value,password.value);
+  const c=await fbAuth.createUserWithEmailAndPassword(email.value,password.value);
   await db.collection("users").doc(c.user.uid).set({name:"",verified:false});
   alert("Registered! Login now.");
 };
-logout.onclick=()=>auth.signOut();
+logout.onclick=()=>fbAuth.signOut();
 
-auth.onAuthStateChanged(u=>{
+/* STATE */
+fbAuth.onAuthStateChanged(u=>{
   if(u){
-    auth.style.display="none";
+    authBox.style.display="none";
     nav.style.display="flex";
     show("home");
     loadListings();
     loadMyListings();
     loadProfile();
   }else{
-    auth.style.display="block";
+    authBox.style.display="block";
     nav.style.display="none";
+    show("authBox");
   }
 });
 
-/* CLOUDINARY UPLOAD */
+/* NAV */
+function show(id){
+  document.querySelectorAll("section").forEach(s=>s.style.display="none");
+  document.getElementById(id).style.display="block";
+}
+
+/* CLOUDINARY */
 async function uploadToCloudinary(file){
   const fd=new FormData();
   fd.append("file",file);
   fd.append("upload_preset","zedmarket");
-
-  const r=await fetch("https://api.cloudinary.com/v1_1/dc5moeafv/image/upload",{
-    method:"POST",
-    body:fd
-  });
-
+  const r=await fetch("https://api.cloudinary.com/v1_1/dc5moeafv/image/upload",{method:"POST",body:fd});
   const d=await r.json();
   if(!d.secure_url) throw "Upload failed";
   return d.secure_url;
 }
 
-/* SUBMIT LISTING */
+/* SUBMIT */
 submit.onclick=async()=>{
-  const u=auth.currentUser;
+  const u=fbAuth.currentUser;
   if(!u) return alert("Login first");
-
   const file=imageFile.files[0];
   if(!file) return alert("Select image");
-  if(file.size>2*1024*1024) return alert("Max 2MB");
-
   const imageURL=await uploadToCloudinary(file);
-
   await db.collection("listings").add({
     title:title.value,
     price:price.value,
@@ -161,44 +151,39 @@ submit.onclick=async()=>{
     desc:desc.value,
     sellerId:u.uid,
     status:"pending",
-    featured:false,
     createdAt:Date.now()
   });
-
   alert("Submitted for approval");
   imageFile.value="";title.value="";price.value="";whatsapp.value="";desc.value="";
   loadMyListings();
 };
 
-/* LOAD LISTINGS */
+/* LOAD */
 async function loadListings(){
   const snap=await db.collection("listings").get();
   listings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
-    if(d.status!=="approved") return;
+    if(d.status!=="approved")return;
     listings.innerHTML+=`
     <div class="card">
       <img src="${d.image}">
       <h4>${d.title}</h4>
       <div class="price">${d.price}</div>
       <p>${d.desc}</p>
-      ${d.whatsapp?`<a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">WhatsApp Seller</a>`:""}
     </div>`;
   });
 }
 
-/* MY LISTINGS */
 async function loadMyListings(){
-  const u=auth.currentUser;
-  const snap=await db.collection("listings").where("sellerId","==",u.uid).get();
+  const snap=await db.collection("listings").where("sellerId","==",fbAuth.currentUser.uid).get();
   myListings.innerHTML="";
   snap.forEach(doc=>{
     const d=doc.data();
     myListings.innerHTML+=`
     <div class="card">
       <img src="${d.image}">
-      <span class="badge ${d.status==="pending"?"pendingBadge":"verified"}">${d.status}</span>
+      <span class="badge pendingBadge">${d.status}</span>
       <h4>${d.title}</h4>
     </div>`;
   });
@@ -206,16 +191,13 @@ async function loadMyListings(){
 
 /* PROFILE */
 async function loadProfile(){
-  const doc=await db.collection("users").doc(auth.currentUser.uid).get();
+  const doc=await db.collection("users").doc(fbAuth.currentUser.uid).get();
   name.value=doc.data().name||"";
 }
 async function saveProfile(){
-  await db.collection("users").doc(auth.currentUser.uid).update({name:name.value});
-  alert("Profile updated");
+  await db.collection("users").doc(fbAuth.currentUser.uid).update({name:name.value});
+  alert("Profile saved");
 }
-
-/* NAV */
-document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 </script>
 </body>
 </html>
