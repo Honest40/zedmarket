@@ -4,39 +4,47 @@
 <meta charset="UTF-8">
 <title>Pamwera Sale & Buy</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 :root{--green:#198754;--orange:#ff8c00;--dark:#0f2a44;}
 body{margin:0;font-family:Arial,sans-serif;background:#f4f4f4}
-header{background:var(--dark);color:#fff;padding:15px;text-align:center;}
-header div:first-child{font-size:24px;font-weight:bold;}
-header div:last-child{font-size:14px;color:#fff;opacity:0.85;}
-nav{display:none;gap:5px;background:var(--orange);padding:8px;flex-wrap:wrap}
-nav button{flex:1;border:none;padding:10px;color:#fff;border-radius:6px;font-size:15px;cursor:pointer;margin:2px}
+header{background:var(--dark);color:#fff;padding:15px;text-align:center}
+header .title{font-size:26px;font-weight:bold}
+header .subtitle{font-size:14px;opacity:.9}
+
+nav{display:none;background:var(--orange);padding:8px;gap:5px;flex-wrap:wrap}
+nav button{flex:1;border:none;padding:10px;color:#fff;border-radius:6px;font-weight:bold;cursor:pointer}
 nav button.active{background:var(--green)}
+
 section{display:none;padding:15px}
 input,textarea,select,button{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
 button{background:var(--green);color:#fff;font-weight:bold;cursor:pointer}
+
 .card{background:#fff;border-radius:10px;padding:10px;margin:10px 0;box-shadow:0 2px 5px rgba(0,0,0,.1)}
-.price{font-size:20px;color:var(--orange);font-weight:bold;margin-top:4px}
-.badge{display:inline-block;background:var(--orange);color:#000;padding:3px 6px;border-radius:4px;font-size:12px;margin-left:4px}
-.sponsoredBadge{background:gold;color:#000;font-weight:bold;}
-.verified{background:var(--green);color:#fff}
-.pendingBadge{background:#6c757d;color:#fff}
-img{width:100%;height:auto;max-height:400px;object-fit:contain;border-radius:8px;background:#eee;}
-.contactBtns{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;}
-.contactBtns a{flex:1;text-align:center;text-decoration:none;padding:10px;border-radius:8px;color:#fff;font-weight:bold;transition:0.3s;}
-.contactBtns a.whatsappBtn{background:#25d366;}
-.contactBtns a.supportBtn{flex:0 0 auto;padding:5px 10px;font-size:14px;background:#25d366;}
+.price{font-size:20px;color:var(--orange);font-weight:bold}
+
+.badge{padding:3px 6px;border-radius:4px;font-size:12px;margin-left:4px}
+.verified{background:#198754;color:#fff}
+.pending{background:#6c757d;color:#fff}
+.sponsored{background:gold;color:#000;font-weight:bold}
+
+img{width:100%;max-height:400px;object-fit:contain;background:#eee;border-radius:8px}
+
+.contactBtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.contactBtns a{text-decoration:none;color:#fff;padding:10px;border-radius:8px;font-weight:bold;text-align:center}
+.whatsapp{background:#25d366}
+.support{background:#128c7e;font-size:14px;padding:6px 10px}
+
+.reactBtns button{background:#dc3545;border:none;border-radius:6px;padding:6px 12px}
 .refresh{background:#6c757d;margin-bottom:10px}
-.editBtn{background:#ffc107;color:#000;margin-top:5px;}
-.reactBtns button{margin-right:5px;padding:5px 10px;border-radius:5px;border:none;cursor:pointer;}
 </style>
 </head>
+
 <body>
 
 <header>
-  <div>Pamwera Sale & Buy</div>
-  <div>Genuine Products / Items</div>
+  <div class="title">Pamwera Sale & Buy</div>
+  <div class="subtitle">Genuine Products / Items</div>
 </header>
 
 <section id="authBox">
@@ -55,9 +63,9 @@ img{width:100%;height:auto;max-height:400px;object-fit:contain;border-radius:8px
 </nav>
 
 <section id="home">
-  <input id="searchInput" placeholder="Search listings...">
+  <input id="searchInput" placeholder="Search listings">
   <select id="sortListings">
-    <option value="newest">Newest First</option>
+    <option value="newest">Newest</option>
     <option value="priceLow">Price Low → High</option>
     <option value="priceHigh">Price High → Low</option>
   </select>
@@ -67,32 +75,28 @@ img{width:100%;height:auto;max-height:400px;object-fit:contain;border-radius:8px
 
 <section id="sell">
   <h3>Post Listing</h3>
+
+  <!-- IMAGE COMES FROM APP -->
+  <button onclick="alert('Use the app Choose Image button')">Choose Image (App)</button>
+
   <input id="title" placeholder="Title">
   <input id="price" placeholder="Price">
-  <input type="file" id="imageFile" accept="image/*">
   <select id="location">
     <option value="">Select Location</option>
-    <option value="Lusaka">Lusaka</option>
-    <option value="Copperbelt">Copperbelt</option>
-    <option value="Southern">Southern</option>
-    <option value="Eastern">Eastern</option>
-    <option value="Northern">Northern</option>
-    <option value="Luapula">Luapula</option>
-    <option value="Western">Western</option>
-    <option value="North-Western">North-Western</option>
-    <option value="Muchinga">Muchinga</option>
-    <option value="Central">Central</option>
+    <option>Lusaka</option><option>Copperbelt</option><option>Central</option>
+    <option>Southern</option><option>Eastern</option><option>Northern</option>
+    <option>Luapula</option><option>Western</option><option>Muchinga</option>
+    <option>North-Western</option>
   </select>
   <input id="whatsapp" placeholder="WhatsApp (260...)">
   <textarea id="desc" placeholder="Description"></textarea>
   <button id="submit">Submit</button>
-  <h4>Your Listings</h4>
   <div id="myListings"></div>
 </section>
 
 <section id="profile">
   <h3>Profile</h3>
-  <input id="name" placeholder="Name">
+  <input id="name" placeholder="Your name">
   <button id="saveProfile">Save</button>
 </section>
 
@@ -107,51 +111,29 @@ firebase.initializeApp({
   projectId:"pa-mwera"
 });
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+const auth=firebase.auth(), db=firebase.firestore();
+let selectedAppImage=null;
 
-const authBox = document.getElementById("authBox");
-const nav = document.getElementById("nav");
-const email = document.getElementById("email");
-const password = document.getElementById("password");
-const title = document.getElementById("title");
-const price = document.getElementById("price");
-const whatsapp = document.getElementById("whatsapp");
-const desc = document.getElementById("desc");
-const imageFile = document.getElementById("imageFile");
-const locationSelect = document.getElementById("location");
-const nameInput = document.getElementById("name");
-const listingsDiv = document.getElementById("listings");
-const myListingsDiv = document.getElementById("myListings");
+/* CALLED BY NIO TRON */
+function receiveImageFromApp(url){
+  selectedAppImage=url;
+  alert("Image selected successfully");
+}
 
-/* NAVIGATION */
 function show(id){
   document.querySelectorAll("section").forEach(s=>s.style.display="none");
   document.getElementById(id).style.display="block";
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-  const btn = document.querySelector(`nav button[data-tab="${id}"]`);
-  if(btn) btn.classList.add("active");
+  document.querySelector(`[data-tab="${id}"]`)?.classList.add("active");
 }
 document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
-
-/* LOGIN / REGISTER */
-document.getElementById("loginBtn").onclick = () => auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
-document.getElementById("registerBtn").onclick = async () => {
-  if(!email.value || !password.value){ alert("Enter email & password"); return; }
-  const c = await auth.createUserWithEmailAndPassword(email.value,password.value);
-  await db.collection("users").doc(c.user.uid).set({name:"",verified:false});
-  alert("Registered! Login now.");
-};
-document.getElementById("logout").onclick = () => auth.signOut();
 
 auth.onAuthStateChanged(u=>{
   if(u){
     authBox.style.display="none";
     nav.style.display="flex";
     show("home");
-    loadListings();
-    loadMyListings();
-    loadProfile();
+    loadListings(); loadMyListings(); loadProfile();
   }else{
     authBox.style.display="block";
     nav.style.display="none";
@@ -159,150 +141,83 @@ auth.onAuthStateChanged(u=>{
   }
 });
 
-/* CLOUDINARY UPLOAD */
-async function uploadToCloudinary(file){
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", "zedmarket");
-  const r = await fetch("https://api.cloudinary.com/v1_1/dc5moeafv/image/upload", {method:"POST", body:fd});
-  const d = await r.json();
-  if(!d.secure_url) throw "Upload failed";
-  return d.secure_url;
-}
+loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
+registerBtn.onclick=async()=>{
+  const c=await auth.createUserWithEmailAndPassword(email.value,password.value);
+  await db.collection("users").doc(c.user.uid).set({name:"",verified:false});
+  alert("Registered");
+};
+logout.onclick=()=>auth.signOut();
 
-function formatZMW(value){return new Intl.NumberFormat('en-ZM', {style:'currency', currency:'ZMW'}).format(value);}
+function ZMW(v){return new Intl.NumberFormat('en-ZM',{style:'currency',currency:'ZMW'}).format(v);}
 
-/* SUBMIT LISTING */
-document.getElementById("submit").onclick = async () => {
-  const u = auth.currentUser;
-  if(!u) return alert("Login first");
-  const file = imageFile.files[0];
-  if(!file) return alert("Select image");
-  const imageURL = await uploadToCloudinary(file);
+submit.onclick=async()=>{
+  if(!selectedAppImage) return alert("Choose image first");
+  const u=auth.currentUser;
   await db.collection("listings").add({
     title:title.value,
     price:price.value,
-    image:imageURL,
+    image:selectedAppImage,
     whatsapp:whatsapp.value,
     desc:desc.value,
-    location:locationSelect.value,
+    location:location.value,
     sellerId:u.uid,
     status:"pending",
-    featured:false,
     reactions:[],
     createdAt:Date.now()
   });
   alert("Submitted for approval");
-  imageFile.value=""; title.value=""; price.value=""; whatsapp.value=""; desc.value=""; locationSelect.value="";
-  loadMyListings();
-  loadListings();
+  selectedAppImage=null;
+  loadListings(); loadMyListings();
 };
 
-/* LISTINGS */
 async function loadListings(){
-  const snap = await db.collection("listings").get();
-  const searchTerm = document.getElementById("searchInput").value.toLowerCase();
-  const sortVal = document.getElementById("sortListings").value;
-  const user = auth.currentUser;
-  let arr = [];
+  const snap=await db.collection("listings").get();
+  listings.innerHTML="";
   snap.forEach(doc=>{
-    const d = doc.data();
-    if(d.status!=="approved" && d.sellerId!==user?.uid) return;
-    if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
-    arr.push({...d,id:doc.id});
-  });
-  arr.sort((a,b)=>{
-    if(sortVal==="newest") return b.createdAt - a.createdAt;
-    if(sortVal==="priceLow") return parseFloat(a.price)-parseFloat(b.price);
-    if(sortVal==="priceHigh") return parseFloat(b.price)-parseFloat(a.price);
-  });
-  listingsDiv.innerHTML = "";
-  for(const d of arr){
-    let sellerName = "Unknown";
-    let verified = false;
-    if(d.sellerId){
-      const docu = await db.collection("users").doc(d.sellerId).get();
-      if(docu.exists){ sellerName = docu.data().name || sellerName; verified = docu.data().verified; }
-    }
-    listingsDiv.innerHTML += `
+    const d=doc.data();
+    if(d.status!=="approved") return;
+    listings.innerHTML+=`
     <div class="card">
-      <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
-      <h4>${d.title} ${d.featured?'<span class="badge sponsoredBadge">⭐ SPONSORED</span>':''}</h4>
-      <div class="price">${formatZMW(d.price)} ${d.status==="pending"?'<span class="badge pendingBadge">Pending</span>':'<span class="badge verified">Approved</span>'}</div>
-      <div>Location: ${d.location || 'Not specified'}</div>
-      <div>Seller: ${sellerName} ${verified?'<span class="badge verified">✅ VERIFIED</span>':''}</div>
+      <img src="${d.image}">
+      <h4>${d.title}</h4>
+      <div class="price">${ZMW(d.price)}</div>
+      <div>📍 ${d.location}</div>
       <p>${d.desc}</p>
       <div class="contactBtns">
-        ${d.whatsapp?`<a class="whatsappBtn" href="https://wa.me/${d.whatsapp}" target="_blank">💬 Contact Seller</a>`:""}
-        <a class="supportBtn" href="https://wa.me/260776942402" target="_blank">🛠 Contact Support</a>
+        <a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">Contact Seller</a>
+        <a class="support" href="https://wa.me/260776942402" target="_blank">Support</a>
       </div>
       <div class="reactBtns">
-        <button onclick="reactListing('${d.id}')">❤️ React (${d.reactions?.length || 0})</button>
+        <button onclick="react('${doc.id}')">❤️ ${d.reactions.length}</button>
       </div>
     </div>`;
-  }
+  });
 }
 
-document.getElementById("searchInput").addEventListener("input", loadListings);
-document.getElementById("sortListings").addEventListener("change", loadListings);
-
-/* REACT */
-async function reactListing(listingId){
-  const user = auth.currentUser;
-  if(!user) return alert("Login first to react");
-  const docRef = db.collection("listings").doc(listingId);
-  const doc = await docRef.get();
-  let reactions = doc.data().reactions || [];
-  if(reactions.includes(user.uid)){
-    reactions = reactions.filter(id => id!==user.uid);
-  } else {
-    reactions.push(user.uid);
-  }
-  await docRef.update({reactions});
+async function react(id){
+  const ref=db.collection("listings").doc(id);
+  const d=(await ref.get()).data();
+  let r=d.reactions;
+  const u=auth.currentUser.uid;
+  r=r.includes(u)?r.filter(x=>x!==u):[...r,u];
+  await ref.update({reactions:r});
   loadListings();
-  loadMyListings();
 }
 
-/* MY LISTINGS */
 async function loadMyListings(){
-  const snap = await db.collection("listings").where("sellerId","==",auth.currentUser.uid).get();
-  myListingsDiv.innerHTML="";
-  snap.forEach(doc=>{
-    const d = doc.data();
-    myListingsDiv.innerHTML += `
-    <div class="card">
-      <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
-      <h4>${d.title} ${d.featured?'<span class="badge sponsoredBadge">⭐ SPONSORED</span>':''}</h4>
-      <div class="price">${formatZMW(d.price)} ${d.status==="pending"?'<span class="badge pendingBadge">Pending</span>':'<span class="badge verified">Approved</span>'}</div>
-      <div>Location: ${d.location || 'Not specified'}</div>
-      <div>Seller: You <span class="badge verified">✅</span></div>
-      <p>${d.desc}</p>
-      <div class="contactBtns">
-        ${d.whatsapp?`<a class="whatsappBtn" href="https://wa.me/${d.whatsapp}" target="_blank">💬 Contact Seller</a>`:""}
-        <a class="supportBtn" href="https://wa.me/260776942402" target="_blank">🛠 Contact Support</a>
-      </div>
-      <div class="reactBtns">
-        <button onclick="reactListing('${doc.id}')">❤️ React (${d.reactions?.length || 0})</button>
-      </div>
-    </div>`;
+  const snap=await db.collection("listings").where("sellerId","==",auth.currentUser.uid).get();
+  myListings.innerHTML="<h4>Your Listings</h4>";
+  snap.forEach(d=>{
+    myListings.innerHTML+=`<div class="card">${d.data().title}</div>`;
   });
 }
 
-/* PROFILE */
 async function loadProfile(){
-  const doc = await db.collection("users").doc(auth.currentUser.uid).get();
-  nameInput.value = doc.data().name || "";
+  const d=await db.collection("users").doc(auth.currentUser.uid).get();
+  name.value=d.data().name||"";
 }
-document.getElementById("saveProfile").onclick = async () => {
-  const u = auth.currentUser;
-  if(!u) return alert("Login first");
-  const newName = nameInput.value.trim();
-  if(!newName){ alert("Enter a name"); return; }
-  await db.collection("users").doc(u.uid).update({name: newName});
-  alert("Profile name saved!");
-  loadProfile();
-};
+saveProfile.onclick=()=>db.collection("users").doc(auth.currentUser.uid).update({name:name.value}).then(()=>alert("Saved"));
 </script>
 </body>
 </html>
-
