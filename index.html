@@ -66,6 +66,19 @@ img{
   <input id="title" placeholder="Title">
   <input id="price" placeholder="Price">
   <input type="file" id="imageFile" accept="image/*">
+  <select id="location">
+    <option value="">Select Location</option>
+    <option value="Lusaka">Lusaka</option>
+    <option value="Copperbelt">Copperbelt</option>
+    <option value="Southern">Southern</option>
+    <option value="Eastern">Eastern</option>
+    <option value="Northern">Northern</option>
+    <option value="Luapula">Luapula</option>
+    <option value="Western">Western</option>
+    <option value="North-Western">North-Western</option>
+    <option value="Muchinga">Muchinga</option>
+    <option value="Central">Central</option>
+  </select>
   <input id="whatsapp" placeholder="WhatsApp (260...)">
   <textarea id="desc" placeholder="Description"></textarea>
   <button id="submit">Submit</button>
@@ -110,6 +123,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const whatsapp = document.getElementById("whatsapp");
   const desc = document.getElementById("desc");
   const imageFile = document.getElementById("imageFile");
+  const locationSelect = document.getElementById("location");
   const nameInput = document.getElementById("name");
   const listingsDiv = document.getElementById("listings");
   const myListingsDiv = document.getElementById("myListings");
@@ -160,6 +174,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     return d.secure_url;
   }
 
+  /* FORMAT PRICE */
+  function formatZMW(value){
+    return new Intl.NumberFormat('en-ZM', {style:'currency', currency:'ZMW'}).format(value);
+  }
+
   /* SUBMIT LISTING */
   submit.onclick = async () => {
     const u = fbAuth.currentUser;
@@ -173,13 +192,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       image:imageURL,
       whatsapp:whatsapp.value,
       desc:desc.value,
+      location:locationSelect.value,
       sellerId:u.uid,
       status:"pending",
       featured:false,
       createdAt:Date.now()
     });
     alert("Submitted for approval");
-    imageFile.value=""; title.value=""; price.value=""; whatsapp.value=""; desc.value="";
+    imageFile.value=""; title.value=""; price.value=""; whatsapp.value=""; desc.value=""; locationSelect.value="";
     loadMyListings();
     loadListings();
   };
@@ -214,14 +234,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       <div class="card">
         <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
         <h4>${d.title} ${d.featured?'<span class="badge">SPONSORED</span>':''}</h4>
-        <div class="price">${d.price}</div>
+        <div class="price">${formatZMW(d.price)} ${d.status==="pending"?'<span class="badge pendingBadge">Pending</span>':'<span class="badge verified">Approved</span>'}</div>
+        <div>Location: ${d.location || 'Not specified'}</div>
         <div>Seller: ${sellerName} ${verified?'<span class="badge verified">VERIFIED</span>':''}</div>
         <p>${d.desc}</p>
         <div style="margin-top:8px;">
           ${d.whatsapp?`<a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">💬 Contact Seller</a>`:""}
-          <a class="whatsapp" href="mailto:support@zedmarket.com">🛠 Contact Support</a>
+          <a class="whatsapp" href="mailto:hbforlife40@gmail.com">🛠 Contact Support</a>
         </div>
-        ${d.status==="pending"?'<span class="badge pendingBadge">Pending</span>':""}
       </div>`;
     }
   }
@@ -239,6 +259,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
         <span class="badge ${d.status==="pending"?"pendingBadge":"verified"}">${d.status}</span>
         <h4>${d.title}</h4>
+        <div>Location: ${d.location || 'Not specified'}</div>
       </div>`;
     });
   }
