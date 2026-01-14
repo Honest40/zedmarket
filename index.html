@@ -4,13 +4,8 @@
 <meta charset="UTF-8">
 <title>ZedMarket 🇿🇲</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-:root{
-  --green:#198754;
-  --orange:#ff8c00;
-  --dark:#0f2a44;
-}
+:root{--green:#198754;--orange:#ff8c00;--dark:#0f2a44;}
 body{margin:0;font-family:Arial,sans-serif;background:#f4f4f4}
 header{background:var(--dark);color:#fff;padding:15px;text-align:center;font-size:22px}
 nav{display:none;gap:5px;background:var(--orange);padding:8px;flex-wrap:wrap}
@@ -22,19 +17,24 @@ button{background:var(--green);color:#fff;font-weight:bold;cursor:pointer}
 .card{background:#fff;border-radius:10px;padding:10px;margin:10px 0;box-shadow:0 2px 5px rgba(0,0,0,.1)}
 .price{font-size:20px;color:var(--orange);font-weight:bold}
 .badge{display:inline-block;background:var(--orange);color:#000;padding:3px 6px;border-radius:4px;font-size:12px;margin-left:4px}
+.verified{background:var(--green);color:#fff}
 .pendingBadge{background:#6c757d;color:#fff}
-img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#eee}
+img{
+  width:100%;
+  height:auto;
+  max-height:400px;
+  object-fit:contain;
+  border-radius:8px;
+  background:#eee;
+}
 .whatsapp{display:block;text-align:center;background:#25d366;color:#fff;padding:10px;border-radius:8px;margin-top:8px;text-decoration:none;font-weight:bold}
 .refresh{background:#6c757d}
 .editBtn{background:#ffc107;color:#000;margin-top:5px;}
 </style>
 </head>
-
 <body>
-
 <header>ZedMarket 🇿🇲</header>
 
-<!-- AUTH -->
 <section id="authBox">
   <h3>Login / Register</h3>
   <input id="email" placeholder="Email">
@@ -43,7 +43,6 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <button id="registerBtn">Register</button>
 </section>
 
-<!-- NAV -->
 <nav id="nav">
   <button data-tab="home" class="active">Home</button>
   <button data-tab="sell">Sell</button>
@@ -51,7 +50,6 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <button id="logout">Logout</button>
 </nav>
 
-<!-- HOME -->
 <section id="home">
   <input id="searchInput" placeholder="Search listings...">
   <select id="sortListings">
@@ -63,7 +61,6 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <div id="listings"></div>
 </section>
 
-<!-- SELL -->
 <section id="sell">
   <h3>Post Listing</h3>
   <input id="title" placeholder="Title">
@@ -76,20 +73,25 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <div id="myListings"></div>
 </section>
 
-<!-- PROFILE -->
 <section id="profile">
   <h3>Profile</h3>
   <input id="name" placeholder="Name">
   <button id="saveProfile">Save</button>
 </section>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+
+  firebase.initializeApp({
+    apiKey:"AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
+    authDomain:"pa-mwera.firebaseapp.com",
+    projectId:"pa-mwera"
+  });
+
   const fbAuth = firebase.auth();
   const db = firebase.firestore();
 
@@ -109,11 +111,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const desc = document.getElementById("desc");
   const imageFile = document.getElementById("imageFile");
   const nameInput = document.getElementById("name");
-
   const listingsDiv = document.getElementById("listings");
   const myListingsDiv = document.getElementById("myListings");
 
-  /* NAV */
+  /* NAVIGATION */
   function show(id){
     document.querySelectorAll("section").forEach(s=>s.style.display="none");
     document.getElementById(id).style.display="block";
@@ -123,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 
-  /* AUTH */
+  /* LOGIN / REGISTER */
   loginBtn.onclick = () => fbAuth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
   registerBtn.onclick = async () => {
     if(!email.value || !password.value){ alert("Enter email & password"); return; }
@@ -174,11 +175,13 @@ document.addEventListener("DOMContentLoaded", () => {
       desc:desc.value,
       sellerId:u.uid,
       status:"pending",
+      featured:false,
       createdAt:Date.now()
     });
     alert("Submitted for approval");
     imageFile.value=""; title.value=""; price.value=""; whatsapp.value=""; desc.value="";
     loadMyListings();
+    loadListings();
   };
 
   /* LOAD LISTINGS */
@@ -186,10 +189,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const snap = await db.collection("listings").get();
     const searchTerm = document.getElementById("searchInput").value.toLowerCase();
     const sortVal = document.getElementById("sortListings").value;
+    const user = fbAuth.currentUser;
     let arr = [];
     snap.forEach(doc=>{
       const d = doc.data();
-      if(d.status !== "approved") return;
+      if(d.status!=="approved" && d.sellerId!==user?.uid) return;
       if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
       arr.push({...d,id:doc.id});
     });
@@ -199,16 +203,27 @@ document.addEventListener("DOMContentLoaded", () => {
       if(sortVal==="priceHigh") return parseFloat(b.price)-parseFloat(a.price);
     });
     listingsDiv.innerHTML = "";
-    arr.forEach(d=>{
+    for(const d of arr){
+      let sellerName = "Unknown";
+      let verified = false;
+      if(d.sellerId){
+        const docu = await db.collection("users").doc(d.sellerId).get();
+        if(docu.exists){ sellerName = docu.data().name || sellerName; verified = docu.data().verified; }
+      }
       listingsDiv.innerHTML += `
       <div class="card">
         <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
-        <h4>${d.title}</h4>
+        <h4>${d.title} ${d.featured?'<span class="badge">SPONSORED</span>':''}</h4>
         <div class="price">${d.price}</div>
+        <div>Seller: ${sellerName} ${verified?'<span class="badge verified">VERIFIED</span>':''}</div>
         <p>${d.desc}</p>
-        ${d.whatsapp?`<a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">WhatsApp Seller</a>`:""}
+        <div style="margin-top:8px;">
+          ${d.whatsapp?`<a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">💬 Contact Seller</a>`:""}
+          <a class="whatsapp" href="mailto:support@zedmarket.com">🛠 Contact Support</a>
+        </div>
+        ${d.status==="pending"?'<span class="badge pendingBadge">Pending</span>':""}
       </div>`;
-    });
+    }
   }
   document.getElementById("searchInput").addEventListener("input", loadListings);
   document.getElementById("sortListings").addEventListener("change", loadListings);
@@ -234,8 +249,13 @@ document.addEventListener("DOMContentLoaded", () => {
     nameInput.value = doc.data().name || "";
   }
   saveProfileBtn.onclick = async () => {
-    await db.collection("users").doc(fbAuth.currentUser.uid).update({name:nameInput.value});
-    alert("Profile updated!");
+    const u = fbAuth.currentUser;
+    if(!u) return alert("Login first");
+    const newName = nameInput.value.trim();
+    if(!newName){ alert("Enter a name"); return; }
+    await db.collection("users").doc(u.uid).update({name: newName});
+    alert("Profile name saved!");
+    loadProfile();
   };
 
 });
