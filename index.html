@@ -26,6 +26,7 @@ button{background:var(--green);color:#fff;font-weight:bold;cursor:pointer}
 img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#eee}
 .whatsapp{display:block;text-align:center;background:#25d366;color:#fff;padding:10px;border-radius:8px;margin-top:8px;text-decoration:none;font-weight:bold}
 .refresh{background:#6c757d}
+.editBtn{background:#ffc107;color:#000;margin-top:5px;}
 </style>
 </head>
 
@@ -33,6 +34,7 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
 
 <header>ZedMarket 🇿🇲</header>
 
+<!-- AUTH -->
 <section id="authBox">
   <h3>Login / Register</h3>
   <input id="email" placeholder="Email">
@@ -41,6 +43,7 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <button id="registerBtn">Register</button>
 </section>
 
+<!-- NAV -->
 <nav id="nav">
   <button data-tab="home" class="active">Home</button>
   <button data-tab="sell">Sell</button>
@@ -48,6 +51,7 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <button id="logout">Logout</button>
 </nav>
 
+<!-- HOME -->
 <section id="home">
   <input id="searchInput" placeholder="Search listings...">
   <select id="sortListings">
@@ -59,6 +63,7 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <div id="listings"></div>
 </section>
 
+<!-- SELL -->
 <section id="sell">
   <h3>Post Listing</h3>
   <input id="title" placeholder="Title">
@@ -71,133 +76,169 @@ img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#e
   <div id="myListings"></div>
 </section>
 
+<!-- PROFILE -->
 <section id="profile">
   <h3>Profile</h3>
   <input id="name" placeholder="Name">
-  <button onclick="saveProfile()">Save</button>
+  <button id="saveProfile">Save</button>
 </section>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
-firebase.initializeApp({
-  apiKey:"AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
-  authDomain:"pa-mwera.firebaseapp.com",
-  projectId:"pa-mwera"
-});
+document.addEventListener("DOMContentLoaded", () => {
+  const fbAuth = firebase.auth();
+  const db = firebase.firestore();
 
-const fbAuth = firebase.auth();
-const db = firebase.firestore();
+  const authBox = document.getElementById("authBox");
+  const nav = document.getElementById("nav");
+  const loginBtn = document.getElementById("loginBtn");
+  const registerBtn = document.getElementById("registerBtn");
+  const logoutBtn = document.getElementById("logout");
+  const submit = document.getElementById("submit");
+  const saveProfileBtn = document.getElementById("saveProfile");
 
-const authBox = document.getElementById("authBox");
-const nav = document.getElementById("nav");
+  const email = document.getElementById("email");
+  const password = document.getElementById("password");
+  const title = document.getElementById("title");
+  const price = document.getElementById("price");
+  const whatsapp = document.getElementById("whatsapp");
+  const desc = document.getElementById("desc");
+  const imageFile = document.getElementById("imageFile");
+  const nameInput = document.getElementById("name");
 
-/* AUTH */
-loginBtn.onclick=()=>fbAuth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
-registerBtn.onclick=async()=>{
-  const c=await fbAuth.createUserWithEmailAndPassword(email.value,password.value);
-  await db.collection("users").doc(c.user.uid).set({name:"",verified:false});
-  alert("Registered! Login now.");
-};
-logout.onclick=()=>fbAuth.signOut();
+  const listingsDiv = document.getElementById("listings");
+  const myListingsDiv = document.getElementById("myListings");
 
-/* STATE */
-fbAuth.onAuthStateChanged(u=>{
-  if(u){
-    authBox.style.display="none";
-    nav.style.display="flex";
-    show("home");
-    loadListings();
-    loadMyListings();
-    loadProfile();
-  }else{
-    authBox.style.display="block";
-    nav.style.display="none";
-    show("authBox");
+  /* NAV */
+  function show(id){
+    document.querySelectorAll("section").forEach(s=>s.style.display="none");
+    document.getElementById(id).style.display="block";
+    document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+    const btn = document.querySelector(`nav button[data-tab="${id}"]`);
+    if(btn) btn.classList.add("active");
   }
+  document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
+
+  /* AUTH */
+  loginBtn.onclick = () => fbAuth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
+  registerBtn.onclick = async () => {
+    if(!email.value || !password.value){ alert("Enter email & password"); return; }
+    const c = await fbAuth.createUserWithEmailAndPassword(email.value,password.value);
+    await db.collection("users").doc(c.user.uid).set({name:"",verified:false});
+    alert("Registered! Login now.");
+  };
+  logoutBtn.onclick = () => fbAuth.signOut();
+
+  fbAuth.onAuthStateChanged(u=>{
+    if(u){
+      authBox.style.display="none";
+      nav.style.display="flex";
+      show("home");
+      loadListings();
+      loadMyListings();
+      loadProfile();
+    }else{
+      authBox.style.display="block";
+      nav.style.display="none";
+      show("authBox");
+    }
+  });
+
+  /* CLOUDINARY UPLOAD */
+  async function uploadToCloudinary(file){
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "zedmarket");
+    const r = await fetch("https://api.cloudinary.com/v1_1/dc5moeafv/image/upload", {method:"POST", body:fd});
+    const d = await r.json();
+    if(!d.secure_url) throw "Upload failed";
+    return d.secure_url;
+  }
+
+  /* SUBMIT LISTING */
+  submit.onclick = async () => {
+    const u = fbAuth.currentUser;
+    if(!u) return alert("Login first");
+    const file = imageFile.files[0];
+    if(!file) return alert("Select image");
+    const imageURL = await uploadToCloudinary(file);
+    await db.collection("listings").add({
+      title:title.value,
+      price:price.value,
+      image:imageURL,
+      whatsapp:whatsapp.value,
+      desc:desc.value,
+      sellerId:u.uid,
+      status:"pending",
+      createdAt:Date.now()
+    });
+    alert("Submitted for approval");
+    imageFile.value=""; title.value=""; price.value=""; whatsapp.value=""; desc.value="";
+    loadMyListings();
+  };
+
+  /* LOAD LISTINGS */
+  async function loadListings(){
+    const snap = await db.collection("listings").get();
+    const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+    const sortVal = document.getElementById("sortListings").value;
+    let arr = [];
+    snap.forEach(doc=>{
+      const d = doc.data();
+      if(d.status !== "approved") return;
+      if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
+      arr.push({...d,id:doc.id});
+    });
+    arr.sort((a,b)=>{
+      if(sortVal==="newest") return b.createdAt - a.createdAt;
+      if(sortVal==="priceLow") return parseFloat(a.price)-parseFloat(b.price);
+      if(sortVal==="priceHigh") return parseFloat(b.price)-parseFloat(a.price);
+    });
+    listingsDiv.innerHTML = "";
+    arr.forEach(d=>{
+      listingsDiv.innerHTML += `
+      <div class="card">
+        <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
+        <h4>${d.title}</h4>
+        <div class="price">${d.price}</div>
+        <p>${d.desc}</p>
+        ${d.whatsapp?`<a class="whatsapp" href="https://wa.me/${d.whatsapp}" target="_blank">WhatsApp Seller</a>`:""}
+      </div>`;
+    });
+  }
+  document.getElementById("searchInput").addEventListener("input", loadListings);
+  document.getElementById("sortListings").addEventListener("change", loadListings);
+
+  /* MY LISTINGS */
+  async function loadMyListings(){
+    const snap = await db.collection("listings").where("sellerId","==",fbAuth.currentUser.uid).get();
+    myListingsDiv.innerHTML="";
+    snap.forEach(doc=>{
+      const d = doc.data();
+      myListingsDiv.innerHTML += `
+      <div class="card">
+        <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
+        <span class="badge ${d.status==="pending"?"pendingBadge":"verified"}">${d.status}</span>
+        <h4>${d.title}</h4>
+      </div>`;
+    });
+  }
+
+  /* PROFILE */
+  async function loadProfile(){
+    const doc = await db.collection("users").doc(fbAuth.currentUser.uid).get();
+    nameInput.value = doc.data().name || "";
+  }
+  saveProfileBtn.onclick = async () => {
+    await db.collection("users").doc(fbAuth.currentUser.uid).update({name:nameInput.value});
+    alert("Profile updated!");
+  };
+
 });
-
-/* NAV */
-function show(id){
-  document.querySelectorAll("section").forEach(s=>s.style.display="none");
-  document.getElementById(id).style.display="block";
-}
-
-/* CLOUDINARY */
-async function uploadToCloudinary(file){
-  const fd=new FormData();
-  fd.append("file",file);
-  fd.append("upload_preset","zedmarket");
-  const r=await fetch("https://api.cloudinary.com/v1_1/dc5moeafv/image/upload",{method:"POST",body:fd});
-  const d=await r.json();
-  if(!d.secure_url) throw "Upload failed";
-  return d.secure_url;
-}
-
-/* SUBMIT */
-submit.onclick=async()=>{
-  const u=fbAuth.currentUser;
-  if(!u) return alert("Login first");
-  const file=imageFile.files[0];
-  if(!file) return alert("Select image");
-  const imageURL=await uploadToCloudinary(file);
-  await db.collection("listings").add({
-    title:title.value,
-    price:price.value,
-    image:imageURL,
-    whatsapp:whatsapp.value,
-    desc:desc.value,
-    sellerId:u.uid,
-    status:"pending",
-    createdAt:Date.now()
-  });
-  alert("Submitted for approval");
-  imageFile.value="";title.value="";price.value="";whatsapp.value="";desc.value="";
-  loadMyListings();
-};
-
-/* LOAD */
-async function loadListings(){
-  const snap=await db.collection("listings").get();
-  listings.innerHTML="";
-  snap.forEach(doc=>{
-    const d=doc.data();
-    if(d.status!=="approved")return;
-    listings.innerHTML+=`
-    <div class="card">
-      <img src="${d.image}">
-      <h4>${d.title}</h4>
-      <div class="price">${d.price}</div>
-      <p>${d.desc}</p>
-    </div>`;
-  });
-}
-
-async function loadMyListings(){
-  const snap=await db.collection("listings").where("sellerId","==",fbAuth.currentUser.uid).get();
-  myListings.innerHTML="";
-  snap.forEach(doc=>{
-    const d=doc.data();
-    myListings.innerHTML+=`
-    <div class="card">
-      <img src="${d.image}">
-      <span class="badge pendingBadge">${d.status}</span>
-      <h4>${d.title}</h4>
-    </div>`;
-  });
-}
-
-/* PROFILE */
-async function loadProfile(){
-  const doc=await db.collection("users").doc(fbAuth.currentUser.uid).get();
-  name.value=doc.data().name||"";
-}
-async function saveProfile(){
-  await db.collection("users").doc(fbAuth.currentUser.uid).update({name:name.value});
-  alert("Profile saved");
-}
 </script>
 </body>
 </html>
