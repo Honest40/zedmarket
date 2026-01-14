@@ -5,7 +5,7 @@
 <title>Pamwera Sale & Buy</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-:root{--green:#198754;--orange:#ff8c00;--dark:#0f2a44;--support:#007bff;}
+:root{--green:#198754;--orange:#ff8c00;--dark:#0f2a44;}
 body{margin:0;font-family:Arial,sans-serif;background:#f4f4f4}
 header{background:var(--dark);color:#fff;padding:15px;text-align:center;}
 header div:first-child{font-size:24px;font-weight:bold;}
@@ -26,16 +26,10 @@ img{width:100%;height:auto;max-height:400px;object-fit:contain;border-radius:8px
 .contactBtns{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;}
 .contactBtns a{flex:1;text-align:center;text-decoration:none;padding:10px;border-radius:8px;color:#fff;font-weight:bold;transition:0.3s;}
 .contactBtns a.whatsappBtn{background:#25d366;}
-.contactBtns a.whatsappBtn:hover{background:#1ebe57;}
-.contactBtns a.supportBtn{background:var(--support);}
-.contactBtns a.supportBtn:hover{background:#0056b3;}
-.refresh{background:#6c757d}
+.contactBtns a.supportBtn{flex:0 0 auto;padding:5px 10px;font-size:14px;background:#25d366;}
+.refresh{background:#6c757d;margin-bottom:10px}
 .editBtn{background:#ffc107;color:#000;margin-top:5px;}
-.reactCommentBtns button{margin-right:5px;padding:5px 10px;border-radius:5px;border:none;cursor:pointer;}
-.commentsSection{margin-top:10px;padding-top:5px;border-top:1px solid #ccc;}
-.commentCard{margin:5px 0;padding:5px;background:#f1f1f1;border-radius:5px;font-size:14px;}
-.commentCard strong{color:#0f2a44;}
-.commentCard span.time{float:right;font-size:10px;color:#555;}
+.reactBtns button{margin-right:5px;padding:5px 10px;border-radius:5px;border:none;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -107,25 +101,17 @@ img{width:100%;height:auto;max-height:400px;object-fit:contain;border-radius:8px
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", async () => {
-
 firebase.initializeApp({
   apiKey:"AIzaSyDhRFgn7nXoZlRf-GX7XakwUYrEMFZDgrI",
   authDomain:"pa-mwera.firebaseapp.com",
   projectId:"pa-mwera"
 });
 
-const fbAuth = firebase.auth();
+const auth = firebase.auth();
 const db = firebase.firestore();
 
 const authBox = document.getElementById("authBox");
 const nav = document.getElementById("nav");
-const loginBtn = document.getElementById("loginBtn");
-const registerBtn = document.getElementById("registerBtn");
-const logoutBtn = document.getElementById("logout");
-const submit = document.getElementById("submit");
-const saveProfileBtn = document.getElementById("saveProfile");
-
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const title = document.getElementById("title");
@@ -149,16 +135,16 @@ function show(id){
 document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 
 /* LOGIN / REGISTER */
-loginBtn.onclick = () => fbAuth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
-registerBtn.onclick = async () => {
+document.getElementById("loginBtn").onclick = () => auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
+document.getElementById("registerBtn").onclick = async () => {
   if(!email.value || !password.value){ alert("Enter email & password"); return; }
-  const c = await fbAuth.createUserWithEmailAndPassword(email.value,password.value);
+  const c = await auth.createUserWithEmailAndPassword(email.value,password.value);
   await db.collection("users").doc(c.user.uid).set({name:"",verified:false});
   alert("Registered! Login now.");
 };
-logoutBtn.onclick = () => fbAuth.signOut();
+document.getElementById("logout").onclick = () => auth.signOut();
 
-fbAuth.onAuthStateChanged(u=>{
+auth.onAuthStateChanged(u=>{
   if(u){
     authBox.style.display="none";
     nav.style.display="flex";
@@ -187,8 +173,8 @@ async function uploadToCloudinary(file){
 function formatZMW(value){return new Intl.NumberFormat('en-ZM', {style:'currency', currency:'ZMW'}).format(value);}
 
 /* SUBMIT LISTING */
-submit.onclick = async () => {
-  const u = fbAuth.currentUser;
+document.getElementById("submit").onclick = async () => {
+  const u = auth.currentUser;
   if(!u) return alert("Login first");
   const file = imageFile.files[0];
   if(!file) return alert("Select image");
@@ -204,7 +190,6 @@ submit.onclick = async () => {
     status:"pending",
     featured:false,
     reactions:[],
-    comments:[],
     createdAt:Date.now()
   });
   alert("Submitted for approval");
@@ -213,12 +198,12 @@ submit.onclick = async () => {
   loadListings();
 };
 
-/* LOAD LISTINGS */
+/* LISTINGS */
 async function loadListings(){
   const snap = await db.collection("listings").get();
   const searchTerm = document.getElementById("searchInput").value.toLowerCase();
   const sortVal = document.getElementById("sortListings").value;
-  const user = fbAuth.currentUser;
+  const user = auth.currentUser;
   let arr = [];
   snap.forEach(doc=>{
     const d = doc.data();
@@ -249,60 +234,38 @@ async function loadListings(){
       <p>${d.desc}</p>
       <div class="contactBtns">
         ${d.whatsapp?`<a class="whatsappBtn" href="https://wa.me/${d.whatsapp}" target="_blank">💬 Contact Seller</a>`:""}
-        <a class="supportBtn" href="mailto:hbforlife40@gmail.com">🛠 Contact Support</a>
+        <a class="supportBtn" href="https://wa.me/260776942402" target="_blank">🛠 Contact Support</a>
       </div>
-      <div class="reactCommentBtns">
+      <div class="reactBtns">
         <button onclick="reactListing('${d.id}')">❤️ React (${d.reactions?.length || 0})</button>
-        <button onclick="commentListing('${d.id}')">💬 Comment (${d.comments?.length || 0})</button>
-      </div>
-      <div class="commentsSection">
-        ${d.comments?.length ? d.comments.map(c=>{
-          return `<div class="commentCard">
-                    <strong>${c.userName || "Unknown"}:</strong> ${c.text} 
-                    <span class="time">${new Date(c.time).toLocaleString()}</span>
-                  </div>`;
-        }).join('') : '<small>No comments yet</small>'}
       </div>
     </div>`;
   }
 }
+
 document.getElementById("searchInput").addEventListener("input", loadListings);
 document.getElementById("sortListings").addEventListener("change", loadListings);
 
-/* REACT & COMMENT */
+/* REACT */
 async function reactListing(listingId){
-  const u = fbAuth.currentUser;
-  if(!u) return alert("Login first to react");
+  const user = auth.currentUser;
+  if(!user) return alert("Login first to react");
   const docRef = db.collection("listings").doc(listingId);
   const doc = await docRef.get();
   let reactions = doc.data().reactions || [];
-  if(reactions.includes(u.uid)){
-    reactions = reactions.filter(id => id!==u.uid);
+  if(reactions.includes(user.uid)){
+    reactions = reactions.filter(id => id!==user.uid);
   } else {
-    reactions.push(u.uid);
+    reactions.push(user.uid);
   }
   await docRef.update({reactions});
   loadListings();
-}
-
-async function commentListing(listingId){
-  const u = fbAuth.currentUser;
-  if(!u) return alert("Login first to comment");
-  const text = prompt("Enter your comment:");
-  if(!text) return;
-  const userDoc = await db.collection("users").doc(u.uid).get();
-  const userName = userDoc.exists ? userDoc.data().name || "Unknown" : "Unknown";
-  const docRef = db.collection("listings").doc(listingId);
-  const doc = await docRef.get();
-  const comments = doc.data().comments || [];
-  comments.push({uid:u.uid,text,time:Date.now(),userName});
-  await docRef.update({comments});
-  loadListings();
+  loadMyListings();
 }
 
 /* MY LISTINGS */
 async function loadMyListings(){
-  const snap = await db.collection("listings").where("sellerId","==",fbAuth.currentUser.uid).get();
+  const snap = await db.collection("listings").where("sellerId","==",auth.currentUser.uid).get();
   myListingsDiv.innerHTML="";
   snap.forEach(doc=>{
     const d = doc.data();
@@ -316,19 +279,10 @@ async function loadMyListings(){
       <p>${d.desc}</p>
       <div class="contactBtns">
         ${d.whatsapp?`<a class="whatsappBtn" href="https://wa.me/${d.whatsapp}" target="_blank">💬 Contact Seller</a>`:""}
-        <a class="supportBtn" href="mailto:hbforlife40@gmail.com">🛠 Contact Support</a>
+        <a class="supportBtn" href="https://wa.me/260776942402" target="_blank">🛠 Contact Support</a>
       </div>
-      <div class="reactCommentBtns">
+      <div class="reactBtns">
         <button onclick="reactListing('${doc.id}')">❤️ React (${d.reactions?.length || 0})</button>
-        <button onclick="commentListing('${doc.id}')">💬 Comment (${d.comments?.length || 0})</button>
-      </div>
-      <div class="commentsSection">
-        ${d.comments?.length ? d.comments.map(c=>{
-          return `<div class="commentCard">
-                    <strong>${c.userName || "Unknown"}:</strong> ${c.text} 
-                    <span class="time">${new Date(c.time).toLocaleString()}</span>
-                  </div>`;
-        }).join('') : '<small>No comments yet</small>'}
       </div>
     </div>`;
   });
@@ -336,11 +290,11 @@ async function loadMyListings(){
 
 /* PROFILE */
 async function loadProfile(){
-  const doc = await db.collection("users").doc(fbAuth.currentUser.uid).get();
+  const doc = await db.collection("users").doc(auth.currentUser.uid).get();
   nameInput.value = doc.data().name || "";
 }
-saveProfileBtn.onclick = async () => {
-  const u = fbAuth.currentUser;
+document.getElementById("saveProfile").onclick = async () => {
+  const u = auth.currentUser;
   if(!u) return alert("Login first");
   const newName = nameInput.value.trim();
   if(!newName){ alert("Enter a name"); return; }
@@ -348,8 +302,6 @@ saveProfileBtn.onclick = async () => {
   alert("Profile name saved!");
   loadProfile();
 };
-
-});
 </script>
 </body>
 </html>
