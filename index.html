@@ -172,7 +172,7 @@ async function uploadToCloudinary(file){
 
 function formatZMW(value){return new Intl.NumberFormat('en-ZM', {style:'currency', currency:'ZMW'}).format(value);}
 
-/* SUBMIT LISTING */
+/* SUBMIT LISTING - DIRECT APPROVAL */
 document.getElementById("submit").onclick = async () => {
   const u = auth.currentUser;
   if(!u) return alert("Login first");
@@ -180,20 +180,25 @@ document.getElementById("submit").onclick = async () => {
   if(!file) return alert("Select image");
   const imageURL = await uploadToCloudinary(file);
   await db.collection("listings").add({
-    title:title.value,
-    price:price.value,
-    image:imageURL,
-    whatsapp:whatsapp.value,
-    desc:desc.value,
-    location:locationSelect.value,
-    sellerId:u.uid,
-    status:"pending",
-    featured:false,
-    reactions:[],
-    createdAt:Date.now()
+    title: title.value,
+    price: price.value,
+    image: imageURL,
+    whatsapp: whatsapp.value,
+    desc: desc.value,
+    location: locationSelect.value,
+    sellerId: u.uid,
+    status: "approved", // ✅ Now direct approval
+    featured: false,
+    reactions: [],
+    createdAt: Date.now()
   });
-  alert("Submitted for approval");
-  imageFile.value=""; title.value=""; price.value=""; whatsapp.value=""; desc.value=""; locationSelect.value="";
+  alert("Listing submitted successfully!");
+  imageFile.value = ""; 
+  title.value = ""; 
+  price.value = ""; 
+  whatsapp.value = ""; 
+  desc.value = ""; 
+  locationSelect.value = "";
   loadMyListings();
   loadListings();
 };
@@ -207,7 +212,6 @@ async function loadListings(){
   let arr = [];
   snap.forEach(doc=>{
     const d = doc.data();
-    if(d.status!=="approved" && d.sellerId!==user?.uid) return;
     if(searchTerm && !d.title.toLowerCase().includes(searchTerm) && !d.desc.toLowerCase().includes(searchTerm)) return;
     arr.push({...d,id:doc.id});
   });
@@ -228,7 +232,7 @@ async function loadListings(){
     <div class="card">
       <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
       <h4>${d.title} ${d.featured?'<span class="badge sponsoredBadge">⭐ SPONSORED</span>':''}</h4>
-      <div class="price">${formatZMW(d.price)} ${d.status==="pending"?'<span class="badge pendingBadge">Pending</span>':'<span class="badge verified">Approved</span>'}</div>
+      <div class="price">${formatZMW(d.price)}<span class="badge verified">Approved</span></div>
       <div>Location: ${d.location || 'Not specified'}</div>
       <div>Seller: ${sellerName} ${verified?'<span class="badge verified">✅ VERIFIED</span>':''}</div>
       <p>${d.desc}</p>
@@ -273,7 +277,7 @@ async function loadMyListings(){
     <div class="card">
       <img src="${d.image}" onerror="this.src='https://via.placeholder.com/300'">
       <h4>${d.title} ${d.featured?'<span class="badge sponsoredBadge">⭐ SPONSORED</span>':''}</h4>
-      <div class="price">${formatZMW(d.price)} ${d.status==="pending"?'<span class="badge pendingBadge">Pending</span>':'<span class="badge verified">Approved</span>'}</div>
+      <div class="price">${formatZMW(d.price)}<span class="badge verified">Approved</span></div>
       <div>Location: ${d.location || 'Not specified'}</div>
       <div>Seller: You <span class="badge verified">✅</span></div>
       <p>${d.desc}</p>
